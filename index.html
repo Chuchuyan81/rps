@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Камень, Ножницы, Бумага</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>Камень, Ножницы, Бумага</h1>
+  <div id="game">
+    <input type="text" id="room" placeholder="Введите ID комнаты" />
+    <button onclick="joinRoom()">Присоединиться</button>
+    <div class="choices">
+      <button onclick="makeMove('камень')">Камень</button>
+      <button onclick="makeMove('ножницы')">Ножницы</button>
+      <button onclick="makeMove('бумага')">Бумага</button>
+    </div>
+    <p id="result"></p>
+  </div>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script> 
+  <script src="script.js"></script>
+</body>
+</html>
