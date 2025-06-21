@@ -116,14 +116,11 @@ function validateRoomId(roomId) {
   if (trimmed.length === 0) {
     return { valid: false, message: "ID комнаты не может быть пустым" };
   }
-  if (trimmed.length < 3) {
-    return { valid: false, message: "ID комнаты должен содержать минимум 3 символа" };
+  if (trimmed.length !== 4) {
+    return { valid: false, message: "ID комнаты должен содержать ровно 4 цифры" };
   }
-  if (trimmed.length > 20) {
-    return { valid: false, message: "ID комнаты слишком длинный (максимум 20 символов)" };
-  }
-  if (!/^[a-zA-Z0-9]+$/.test(trimmed)) {
-    return { valid: false, message: "ID комнаты может содержать только буквы и цифры" };
+  if (!/^\d{4}$/.test(trimmed)) {
+    return { valid: false, message: "ID комнаты должен содержать только цифры" };
   }
   return { valid: true, roomId: trimmed };
 }
@@ -135,6 +132,11 @@ function updateButton() {
 
   if (!roomInput || !actionButton) return;
 
+  // Фильтруем только цифры
+  roomInput.value = roomInput.value.replace(/[^0-9]/g, '');
+
+  // Всегда показываем "Создать комнату" когда поле пустое
+  // И "Присоединиться" когда поле заполнено
   if (roomInput.value.trim() === "") {
     actionButton.textContent = "Создать комнату";
   } else {
@@ -182,15 +184,16 @@ async function handleAction() {
 async function createRoom() {
   let room_id;
   let attempts = 0;
-  const maxAttempts = 5;
+  const maxAttempts = 10;
 
   // Генерируем уникальный ID игрока
   gameState.playerId = generatePlayerId();
   gameState.isPlayer1 = true;
 
-  // Создаем уникальный room_id с несколькими попытками
+  // Создаем уникальный room_id из 4 цифр с несколькими попытками
   while (attempts < maxAttempts) {
-    room_id = 'room_' + Math.random().toString(36).substr(2, 6).toUpperCase();
+    // Генерируем ID из 4 случайных цифр
+    room_id = Math.floor(1000 + Math.random() * 9000).toString();
     
     try {
       const { data: existingRoom, error: checkError } = await supabase
@@ -248,6 +251,8 @@ async function createRoom() {
   const roomInput = document.getElementById("room");
   if (roomInput) {
     roomInput.value = room_id;
+    // Обновляем кнопку после заполнения поля
+    updateButton(); 
   }
 
   showGameUI();
@@ -332,7 +337,11 @@ function showGameUI() {
 
   if (choices) choices.style.display = "block";
   if (roomInput) roomInput.disabled = true;
-  if (actionButton) actionButton.style.display = "none";
+  if (actionButton) {
+    actionButton.style.display = "block";
+    actionButton.textContent = "Закончить игру";
+    actionButton.onclick = () => fullCleanup();
+  }
 
   // Изначально блокируем кнопки выбора
   toggleChoiceButtons(false);
@@ -563,6 +572,28 @@ function handleGameUpdate(gameData) {
 }
 
 // Очистка ресурсов
+// Удаление комнаты из БД после игры
+async function deleteRoomFromDB() {
+  if (!gameState.currentRoom || !supabase) {
+    return;
+  }
+
+  try {
+    const { error } = await supabase
+      .from("games")
+      .delete()
+      .eq("room_id", gameState.currentRoom);
+
+    if (error) {
+      console.error('Error deleting room:', error);
+    } else {
+      console.log(`Room ${gameState.currentRoom} deleted from database`);
+    }
+  } catch (error) {
+    console.error('Exception deleting room:', error);
+  }
+}
+
 function cleanup() {
   if (gameState.channel) {
     supabase.removeChannel(gameState.channel);
@@ -571,22 +602,46 @@ function cleanup() {
 }
 
 // Полная очистка при выходе
-function fullCleanup() {
+async function fullCleanup() {
+  // Удаляем комнату из БД перед очисткой состояния
+  await deleteRoomFromDB();
+  
   cleanup();
-  gameState = {
-    currentRoom: null,
-    playerId: null,
-    isPlayer1: false,
-    channel: null,
-    myChoice: null,
-    opponentChoice: null,
-    gameStatus: 'idle'
-  };
+  
+  // Сброс состояния игры
+  gameState.currentRoom = null;
+  gameState.playerId = null;
+  gameState.isPlayer1 = false;
+  gameState.myChoice = null;
+  gameState.opponentChoice = null;
+  gameState.gameStatus = 'idle';
+
+  // Сброс UI
+  const choices = document.getElementById("choices");
+  const roomInput = document.getElementById("room");
+  const actionButton = document.getElementById("actionButton");
+
+  if (choices) choices.style.display = "none";
+  if (roomInput) {
+    roomInput.disabled = false;
+    roomInput.value = "";
+  }
+  if (actionButton) {
+    actionButton.style.display = "block";
+    actionButton.textContent = "Создать комнату";
+  }
+
+  toggleChoiceButtons(false);
+  showStatus("Игра завершена. Комната удалена из базы данных.");
 }
 
 // Обработка закрытия страницы
-window.addEventListener('beforeunload', () => {
-  fullCleanup();
+window.addEventListener('beforeunload', (event) => {
+  if (gameState.currentRoom) {
+    // Синхронный вызов для удаления комнаты
+    deleteRoomFromDB();
+    cleanup();
+  }
 });
 
 // Обработка потери фокуса страницы
