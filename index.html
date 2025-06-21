@@ -2,36 +2,54 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Многопользовательская игра Камень, Ножницы, Бумага онлайн" />
   <title>Камень, Ножницы, Бумага</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 20px;
-    }
-    .choices button {
-      padding: 15px 30px;
-      margin: 10px;
-      font-size: 18px;
-    }
-    #result {
-      font-size: 24px;
-      margin-top: 20px;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>Камень, Ножницы, Бумага</h1>
-  <div id="game">
-    <input type="text" id="room" placeholder="Введите ID комнаты" oninput="updateButton()" />
-    <button id="actionButton" onclick="handleAction()">Создать комнату</button>
+  <div class="container">
+    <h1>🎮 Камень, Ножницы, Бумага</h1>
+    
+    <div id="game" class="game-container">
+      <div class="room-controls">
+        <input 
+          type="text" 
+          id="room" 
+          placeholder="Введите ID комнаты" 
+          oninput="updateButton()" 
+          maxlength="20"
+          autocomplete="off"
+        />
+        <button id="actionButton" onclick="handleAction()" class="action-btn">
+          Создать комнату
+        </button>
+      </div>
 
-    <div class="choices" id="choices" style="display: none;">
-      <button onclick="makeMove('камень')">Камень</button>
-      <button onclick="makeMove('ножницы')">Ножницы</button>
-      <button onclick="makeMove('бумага')">Бумага</button>
+      <div class="choices" id="choices" style="display: none;">
+        <h3>Сделайте ваш выбор:</h3>
+        <div class="choice-buttons">
+          <button onclick="makeMove('камень')" class="choice-btn" title="Камень">
+            🪨 Камень
+          </button>
+          <button onclick="makeMove('ножницы')" class="choice-btn" title="Ножницы">
+            ✂️ Ножницы
+          </button>
+          <button onclick="makeMove('бумага')" class="choice-btn" title="Бумага">
+            📄 Бумага
+          </button>
+        </div>
+      </div>
+      
+      <div id="result" class="result"></div>
+      
+      <div class="game-info">
+        <p class="info-text">
+          💡 <strong>Как играть:</strong> Создайте комнату или присоединитесь к существующей. 
+          Когда оба игрока готовы, сделайте ваш выбор!
+        </p>
+      </div>
     </div>
-    <p id="result"></p>
   </div>
 
   <!-- Подключение Supabase -->
