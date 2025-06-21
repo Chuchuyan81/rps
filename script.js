@@ -5,6 +5,9 @@ const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 // Ждем загрузки Supabase библиотеки
 let supabase = null;
 
+// Делаем supabase доступным глобально для отладки
+window.supabaseClient = null;
+
 // Инициализация после загрузки библиотеки
 window.addEventListener('DOMContentLoaded', () => {
   // Проверяем доступность Supabase
@@ -28,7 +31,11 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     });
 
+    // Делаем клиент доступным глобально для отладки
+    window.supabaseClient = supabase;
+    
     console.log('Supabase client initialized:', supabase);
+    console.log('Глобальная переменная window.supabaseClient доступна для тестирования');
     showStatus("Готов к игре! Создайте комнату или присоединитесь к существующей.");
     
     // Тестируем подключение
