@@ -139,8 +139,10 @@ function updateButton() {
   // И "Присоединиться" когда поле заполнено
   if (roomInput.value.trim() === "") {
     actionButton.textContent = "Создать комнату";
+    console.log("Button set to: Создать комнату");
   } else {
     actionButton.textContent = "Присоединиться";
+    console.log(`Button set to: Присоединиться (Room ID: ${roomInput.value})`);
   }
 }
 
@@ -163,8 +165,10 @@ async function handleAction() {
 
   try {
     if (actionButton.textContent.includes("Создать")) {
+      console.log("Creating new room...");
       await createRoom();
     } else {
+      console.log(`Attempting to join room: ${room_id}`);
       const validation = validateRoomId(room_id);
       if (!validation.valid) {
         showStatus(validation.message, true);
@@ -251,8 +255,10 @@ async function createRoom() {
   const roomInput = document.getElementById("room");
   if (roomInput) {
     roomInput.value = room_id;
+    console.log(`Room ID ${room_id} inserted into input field`);
     // Обновляем кнопку после заполнения поля
-    updateButton(); 
+    updateButton();
+    console.log("Button updated after room creation");
   }
 
   showGameUI();
@@ -340,6 +346,8 @@ function showGameUI() {
   if (actionButton) {
     actionButton.style.display = "block";
     actionButton.textContent = "Закончить игру";
+    // Убираем старый обработчик и добавляем новый
+    actionButton.onclick = null;
     actionButton.onclick = () => fullCleanup();
   }
 
@@ -629,6 +637,9 @@ async function fullCleanup() {
   if (actionButton) {
     actionButton.style.display = "block";
     actionButton.textContent = "Создать комнату";
+    // Восстанавливаем правильный обработчик
+    actionButton.onclick = null;
+    actionButton.onclick = handleAction;
   }
 
   toggleChoiceButtons(false);

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест логики комнат</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+        .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }
+        input { width: 100%; padding: 10px; margin: 10px 0; font-size: 16px; }
+        button { width: 100%; padding: 15px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .log { background: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 5px; font-family: monospace; font-size: 12px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Тест логики создания комнат</h1>
+        
+        <div>
+            <h3>Шаг 1: Создание комнаты</h3>
+            <p>Оставьте поле пустым и нажмите кнопку:</p>
+            <input 
+                type="text" 
+                id="room" 
+                placeholder="Введите ID комнаты (4 цифры)" 
+                oninput="updateButton()" 
+                maxlength="4"
+                pattern="[0-9]*"
+            />
+            <button id="actionButton" onclick="testAction()">Создать комнату</button>
+        </div>
+
+        <div class="result" id="result"></div>
+
+        <div>
+            <h3>Шаг 2: Присоединение к комнате</h3>
+            <p>Введите ID комнаты выше и нажмите "Присоединиться"</p>
+        </div>
+
+        <div class="log" id="log">
+            <strong>Логи:</strong><br>
+        </div>
+
+        <div>
+            <button onclick="resetTest()">🔄 Сбросить тест</button>
+        </div>
+    </div>
+
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${time}] ${message}<br>`;
+            console.log(`[${time}] ${message}`);
+        }
+
+        function setResult(message, isError = false) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            resultDiv.className = isError ? 'result error' : 'result success';
+        }
+
+        function updateButton() {
+            const roomInput = document.getElementById("room");
+            const actionButton = document.getElementById("actionButton");
+
+            if (!roomInput || !actionButton) return;
+
+            // Фильтруем только цифры
+            roomInput.value = roomInput.value.replace(/[^0-9]/g, '');
+
+            // Логика обновления кнопки
+            if (roomInput.value.trim() === "") {
+                actionButton.textContent = "Создать комнату";
+                log("🔄 Кнопка установлена: 'Создать комнату'");
+            } else {
+                actionButton.textContent = "Присоединиться";
+                log(`🔄 Кнопка установлена: 'Присоединиться' (ID: ${roomInput.value})`);
+            }
+        }
+
+        function generateRoomId() {
+            return Math.floor(1000 + Math.random() * 9000).toString();
+        }
+
+        function testAction() {
+            const roomInput = document.getElementById("room");
+            const actionButton = document.getElementById("actionButton");
+            const room_id = roomInput.value.trim();
+
+            if (actionButton.textContent.includes("Создать")) {
+                log("🏠 Создание новой комнаты...");
+                
+                // Генерируем ID
+                const newRoomId = generateRoomId();
+                log(`🎲 Сгенерирован ID: ${newRoomId}`);
+                
+                // Заполняем поле
+                roomInput.value = newRoomId;
+                log(`📝 ID ${newRoomId} вставлен в поле`);
+                
+                // Обновляем кнопку
+                updateButton();
+                log("✅ Кнопка обновлена после создания комнаты");
+                
+                setResult(`Комната ${newRoomId} создана! Теперь второй игрок может ввести этот ID.`);
+                
+            } else {
+                log(`🚪 Попытка присоединения к комнате: ${room_id}`);
+                
+                // Валидация
+                if (room_id.length !== 4 || !/^\d{4}$/.test(room_id)) {
+                    setResult("Ошибка: ID должен содержать ровно 4 цифры", true);
+                    log("❌ Валидация не пройдена");
+                    return;
+                }
+                
+                setResult(`Присоединение к комнате ${room_id} успешно!`);
+                log("✅ Присоединение к комнате успешно");
+            }
+        }
+
+        function resetTest() {
+            const roomInput = document.getElementById("room");
+            const resultDiv = document.getElementById("result");
+            const logDiv = document.getElementById("log");
+            
+            roomInput.value = "";
+            resultDiv.textContent = "";
+            resultDiv.className = "result";
+            logDiv.innerHTML = "<strong>Логи:</strong><br>";
+            
+            updateButton();
+            log("🔄 Тест сброшен");
+        }
+
+        // Инициализация
+        window.addEventListener('DOMContentLoaded', () => {
+            log("🚀 Тест логики комнат загружен");
+            updateButton();
+        });
+    </script>
+</body>
+</html> 
