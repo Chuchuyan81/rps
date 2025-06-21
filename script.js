@@ -35,8 +35,17 @@ async function handleAction() {
 // Создание комнаты
 async function createRoom() {
   const room_id = Math.random().toString(36).substr(2, 5);
-  document.getElementById("room").value = room_id;
-  const { error } = await supabase.from("games").insert([{ room_id, status: "waiting", player1_choice: null, player2_choice: null }]);
+  const roomInput = document.getElementById("room");
+  roomInput.value = room_id;
+
+  const { error } = await supabase.from("games").insert([
+    {
+      room_id,
+      status: "waiting",
+      player1_choice: null,
+      player2_choice: null
+    }
+  ]);
 
   if (!error) {
     currentRoom = room_id;
@@ -44,13 +53,18 @@ async function createRoom() {
     showGameUI();
     subscribeToUpdates();
   } else {
+    console.error("Ошибка создания комнаты:", error);
     alert("Не удалось создать комнату");
   }
 }
 
 // Присоединение к комнате
 async function joinRoom(room_id) {
-  const { data, error } = await supabase.from("games").select().eq("room_id", room_id).single();
+  const { data, error } = await supabase
+    .from("games")
+    .select()
+    .eq("room_id", room_id)
+    .single();
 
   if (data) {
     currentRoom = room_id;
@@ -58,13 +72,15 @@ async function joinRoom(room_id) {
     showGameUI();
     subscribeToUpdates();
   } else {
+    console.error("Ошибка присоединения:", error);
     alert("Комната не найдена!");
   }
 }
 
 // Отображение кнопок выбора
 function showGameUI() {
-  document.getElementById("choices").style.display = "block";
+  const choices = document.getElementById("choices");
+  choices.style.display = "block";
   document.getElementById("room").disabled = true;
   document.getElementById("actionButton").style.display = "none";
 }
@@ -110,8 +126,8 @@ function determineWinner(p1, p2) {
 function subscribeToUpdates() {
   supabase.removeAllChannels();
 
-  supabase
-    .channel("game-updates")
+  const channel = supabase
+    .channel(`game-updates-${currentRoom}`)
     .on(
       "postgres_changes",
       {
@@ -123,18 +139,29 @@ function subscribeToUpdates() {
       (payload) => {
         const { player1_choice, player2_choice } = payload.new;
 
+        const resultEl = document.getElementById("result");
         if (player1_choice && player2_choice) {
-          document.getElementById("result").innerText = determineWinner(player1_choice, player2_choice);
+          resultEl.innerText = determineWinner(player1_choice, player2_choice);
 
           setTimeout(async () => {
-            await supabase
-              .from("games")
-              .update({ player1_choice: null, player2_choice: null, status: "waiting" })
-              .eq("room_id", currentRoom);
-            document.getElementById("result").innerText = "";
+            try {
+              await supabase
+                .from("games")
+                .update({ player1_choice: null, player2_choice: null, status: "waiting" })
+                .eq("room_id", currentRoom);
+              resultEl.innerText = "";
+            } catch (e) {
+              console.error("Ошибка сброса игры:", e);
+            }
           }, 3000);
         }
       }
     )
-    .subscribe();
+    .subscribe((status) => {
+      if (status !== "SUBSCRIBED") {
+        console.warn("WebSocket не подключен");
+      }
+    });
+
+  return channel;
 }
