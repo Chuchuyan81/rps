@@ -5,6 +5,7 @@ const supabase = createClient(
 );
 
 let currentRoom = null;
+let isPlayer1 = false;
 
 // Динамическое изменение кнопки
 function updateButton() {
@@ -35,12 +36,13 @@ async function handleAction() {
 async function createRoom() {
   const room_id = Math.random().toString(36).substr(2, 5);
   document.getElementById("room").value = room_id;
-  const { error } = await supabase.from("games").insert([{ room_id, status: "waiting" }]);
+  const { error } = await supabase.from("games").insert([{ room_id, status: "waiting", player1_choice: null, player2_choice: null }]);
 
   if (!error) {
     currentRoom = room_id;
-    subscribeToUpdates();
+    isPlayer1 = true;
     showGameUI();
+    subscribeToUpdates();
   } else {
     alert("Не удалось создать комнату");
   }
@@ -52,8 +54,9 @@ async function joinRoom(room_id) {
 
   if (data) {
     currentRoom = room_id;
-    subscribeToUpdates();
+    isPlayer1 = false;
     showGameUI();
+    subscribeToUpdates();
   } else {
     alert("Комната не найдена!");
   }
@@ -62,27 +65,36 @@ async function joinRoom(room_id) {
 // Отображение кнопок выбора
 function showGameUI() {
   document.getElementById("choices").style.display = "block";
+  document.getElementById("room").disabled = true;
+  document.getElementById("actionButton").style.display = "none";
 }
 
-// Отправка хода игрока
+// Отправка хода
 async function makeMove(choice) {
   if (!currentRoom) return;
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("games")
     .select("player1_choice,player2_choice")
     .eq("room_id", currentRoom)
     .single();
 
-  if (!data.player1_choice && !data.player2_choice) {
+  if (error) {
+    console.error("Ошибка загрузки данных:", error);
+    return;
+  }
+
+  const updateData = {};
+  if (isPlayer1 && !data.player1_choice && !data.player2_choice) {
+    updateData.player1_choice = choice;
+  } else if (!isPlayer1 && data.player1_choice && !data.player2_choice) {
+    updateData.player2_choice = choice;
+  }
+
+  if (Object.keys(updateData).length > 0) {
     await supabase
       .from("games")
-      .update({ player1_choice: choice, status: "active" })
-      .eq("room_id", currentRoom);
-  } else if (data.player1_choice && !data.player2_choice) {
-    await supabase
-      .from("games")
-      .update({ player2_choice: choice, status: "active" })
+      .update(updateData)
       .eq("room_id", currentRoom);
   }
 }
@@ -110,6 +122,7 @@ function subscribeToUpdates() {
       },
       (payload) => {
         const { player1_choice, player2_choice } = payload.new;
+
         if (player1_choice && player2_choice) {
           document.getElementById("result").innerText = determineWinner(player1_choice, player2_choice);
 
