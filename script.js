@@ -1,40 +1,123 @@
-// Инициализация Supabase
-const { createClient } = supabase;
-const supabaseClient = createClient(
-  "https://kdbbyqsdmucjvsatbiog.supabase.co", 
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkYmJ5cXNkbXVjanZzYXRiaW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0MzQxNzcsImV4cCI6MjA2NjAxMDE3N30.v6wR9s1zCyYL-xN2Rohoi35LJ-f1uA1Y5KPPjQoXhLU"
-);
+// Правильная инициализация Supabase
+const supabaseUrl = "https://kdbbyqsdmucjvsatbiog.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkYmJ5cXNkbXVjanZzYXRiaW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0MzQxNzcsImV4cCI6MjA2NjAxMDE3N30.v6wR9s1zCyYL-xN2Rohoi35LJ-f1uA1Y5KPPjQoXhLU";
 
-let currentRoom = null;
-let isPlayer1 = false;
-let gameInProgress = false;
-let choicesMade = false;
-let channel = null;
+// Ждем загрузки Supabase библиотеки
+let supabase = null;
+
+// Инициализация после загрузки библиотеки
+window.addEventListener('DOMContentLoaded', () => {
+  // Проверяем доступность Supabase
+  if (typeof window.supabase === 'undefined') {
+    console.error('Supabase library not loaded');
+    showStatus("Ошибка загрузки библиотеки Supabase", true);
+    return;
+  }
+
+  try {
+    // Правильная инициализация клиента
+    supabase = window.supabase.createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: false // Отключаем персистентность для простоты
+      },
+      realtime: {
+        params: {
+          eventsPerSecond: 10
+        }
+      }
+    });
+
+    console.log('Supabase client initialized:', supabase);
+    showStatus("Готов к игре! Создайте комнату или присоединитесь к существующей.");
+    
+    // Тестируем подключение
+    testConnection();
+    
+  } catch (error) {
+    console.error('Error initializing Supabase:', error);
+    showStatus("Ошибка инициализации Supabase: " + error.message, true);
+  }
+});
+
+// Состояние игры
+let gameState = {
+  currentRoom: null,
+  playerId: null,
+  isPlayer1: false,
+  channel: null,
+  myChoice: null,
+  opponentChoice: null,
+  gameStatus: 'idle' // idle, waiting, playing, finished
+};
+
+// Генерация уникального ID игрока
+function generatePlayerId() {
+  return 'player_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now().toString(36);
+}
+
+// Тестирование подключения
+async function testConnection() {
+  if (!supabase) return;
+  
+  try {
+    const { data, error } = await supabase
+      .from('games')
+      .select('count')
+      .limit(1);
+    
+    if (error) {
+      console.error('Connection test failed:', error);
+      showStatus(`Ошибка подключения к базе данных: ${error.message}`, true);
+    } else {
+      console.log('Connection test successful');
+    }
+  } catch (error) {
+    console.error('Connection test error:', error);
+    showStatus("Ошибка сети. Проверьте подключение к интернету.", true);
+  }
+}
 
 // Показать статус игры
 function showStatus(message, isError = false) {
   const resultEl = document.getElementById("result");
-  resultEl.innerText = message;
-  resultEl.style.color = isError ? "red" : "black";
+  if (resultEl) {
+    resultEl.innerText = message;
+    resultEl.className = `result ${isError ? 'error' : ''}`;
+  }
+  console.log(`Status: ${message}`);
 }
 
 // Показать лоадер
 function showLoader(show = true) {
   const actionButton = document.getElementById("actionButton");
-  if (show) {
-    actionButton.disabled = true;
-    actionButton.textContent = "Загрузка...";
-  } else {
-    actionButton.disabled = false;
+  if (actionButton) {
+    actionButton.disabled = show;
+    if (show) {
+      actionButton.textContent = "Загрузка...";
+      actionButton.classList.add('loading');
+    } else {
+      actionButton.classList.remove('loading');
+      updateButton(); // Восстанавливаем правильный текст
+    }
   }
 }
 
 // Валидация room_id
 function validateRoomId(roomId) {
   const trimmed = roomId.trim();
-  if (trimmed.length === 0) return { valid: false, message: "ID комнаты не может быть пустым" };
-  if (trimmed.length > 20) return { valid: false, message: "ID комнаты слишком длинный" };
-  if (!/^[a-zA-Z0-9]+$/.test(trimmed)) return { valid: false, message: "ID комнаты может содержать только буквы и цифры" };
+  if (trimmed.length === 0) {
+    return { valid: false, message: "ID комнаты не может быть пустым" };
+  }
+  if (trimmed.length < 3) {
+    return { valid: false, message: "ID комнаты должен содержать минимум 3 символа" };
+  }
+  if (trimmed.length > 20) {
+    return { valid: false, message: "ID комнаты слишком длинный (максимум 20 символов)" };
+  }
+  if (!/^[a-zA-Z0-9]+$/.test(trimmed)) {
+    return { valid: false, message: "ID комнаты может содержать только буквы и цифры" };
+  }
   return { valid: true, roomId: trimmed };
 }
 
@@ -42,6 +125,8 @@ function validateRoomId(roomId) {
 function updateButton() {
   const roomInput = document.getElementById("room");
   const actionButton = document.getElementById("actionButton");
+
+  if (!roomInput || !actionButton) return;
 
   if (roomInput.value.trim() === "") {
     actionButton.textContent = "Создать комнату";
@@ -52,15 +137,23 @@ function updateButton() {
 
 // Обработка нажатия на кнопку
 async function handleAction() {
+  if (!supabase) {
+    showStatus("Supabase не инициализирован", true);
+    return;
+  }
+
   const roomInput = document.getElementById("room");
   const actionButton = document.getElementById("actionButton");
+  
+  if (!roomInput || !actionButton) return;
+
   const room_id = roomInput.value.trim();
 
   showLoader(true);
   showStatus("");
 
   try {
-    if (actionButton.textContent === "Создать комнату") {
+    if (actionButton.textContent.includes("Создать")) {
       await createRoom();
     } else {
       const validation = validateRoomId(room_id);
@@ -71,8 +164,8 @@ async function handleAction() {
       await joinRoom(validation.roomId);
     }
   } catch (error) {
-    console.error("Ошибка:", error);
-    showStatus("Произошла ошибка. Проверьте подключение к интернету.", true);
+    console.error("Ошибка в handleAction:", error);
+    showStatus(`Произошла ошибка: ${error.message}`, true);
   } finally {
     showLoader(false);
   }
@@ -84,92 +177,163 @@ async function createRoom() {
   let attempts = 0;
   const maxAttempts = 5;
 
+  // Генерируем уникальный ID игрока
+  gameState.playerId = generatePlayerId();
+  gameState.isPlayer1 = true;
+
   // Создаем уникальный room_id с несколькими попытками
   while (attempts < maxAttempts) {
-    room_id = Math.random().toString(36).substr(2, 8);
+    room_id = 'room_' + Math.random().toString(36).substr(2, 6).toUpperCase();
     
-    const { data: existingRoom } = await supabaseClient
-      .from("games")
-      .select("room_id")
-      .eq("room_id", room_id)
-      .single();
+    try {
+      const { data: existingRoom, error: checkError } = await supabase
+        .from("games")
+        .select("room_id")
+        .eq("room_id", room_id)
+        .maybeSingle();
 
-    if (!existingRoom) break;
-    attempts++;
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw checkError;
+      }
+
+      if (!existingRoom) break;
+      attempts++;
+    } catch (error) {
+      console.error('Error checking room existence:', error);
+      attempts++;
+    }
   }
 
   if (attempts >= maxAttempts) {
-    throw new Error("Не удалось создать уникальный ID комнаты");
+    throw new Error("Не удалось создать уникальный ID комнаты. Попробуйте еще раз.");
   }
 
-  const roomInput = document.getElementById("room");
-  roomInput.value = room_id;
+  // Создаем запись в базе данных
+  const gameData = {
+    room_id: room_id,
+    player1_id: gameState.playerId,
+    player2_id: null,
+    player1_choice: null,
+    player2_choice: null,
+    status: 'waiting_player2',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
 
-  const { error } = await supabaseClient.from("games").insert([
-    {
-      room_id,
-      status: "waiting",
-      player1_choice: null,
-      player2_choice: null,
-      player_count: 1
-    }
-  ]);
+  const { data, error } = await supabase
+    .from("games")
+    .insert([gameData])
+    .select()
+    .single();
 
   if (error) {
+    console.error('Error creating room:', error);
     throw new Error(`Ошибка создания комнаты: ${error.message}`);
   }
 
-  currentRoom = room_id;
-  isPlayer1 = true;
+  console.log('Room created successfully:', data);
+
+  // Обновляем состояние
+  gameState.currentRoom = room_id;
+  gameState.gameStatus = 'waiting';
+
+  // Обновляем UI
+  const roomInput = document.getElementById("room");
+  if (roomInput) {
+    roomInput.value = room_id;
+  }
+
   showGameUI();
-  showStatus("Комната создана! Ожидание второго игрока...");
+  showStatus(`Комната ${room_id} создана! Ожидание второго игрока...`);
   subscribeToUpdates();
 }
 
 // Присоединение к комнате
 async function joinRoom(room_id) {
-  const { data, error } = await supabaseClient
-    .from("games")
-    .select("*")
-    .eq("room_id", room_id)
-    .single();
+  // Генерируем уникальный ID игрока
+  gameState.playerId = generatePlayerId();
+  gameState.isPlayer1 = false;
 
-  if (error || !data) {
-    throw new Error("Комната не найдена!");
+  try {
+    // Проверяем существование комнаты
+    const { data: existingGame, error: selectError } = await supabase
+      .from("games")
+      .select("*")
+      .eq("room_id", room_id)
+      .single();
+
+    if (selectError) {
+      if (selectError.code === 'PGRST116') {
+        throw new Error("Комната не найдена!");
+      }
+      throw selectError;
+    }
+
+    if (!existingGame) {
+      throw new Error("Комната не найдена!");
+    }
+
+    if (existingGame.player2_id) {
+      throw new Error("Комната уже заполнена!");
+    }
+
+    if (existingGame.status !== 'waiting_player2') {
+      throw new Error("Комната недоступна для присоединения!");
+    }
+
+    // Присоединяемся к комнате
+    const { data: updatedGame, error: updateError } = await supabase
+      .from("games")
+      .update({ 
+        player2_id: gameState.playerId,
+        status: 'ready',
+        updated_at: new Date().toISOString()
+      })
+      .eq("room_id", room_id)
+      .eq("player2_id", null) // Дополнительная проверка для избежания race condition
+      .select()
+      .single();
+
+    if (updateError) {
+      if (updateError.code === 'PGRST116') {
+        throw new Error("Комната уже заполнена!");
+      }
+      throw updateError;
+    }
+
+    console.log('Successfully joined room:', updatedGame);
+
+    // Обновляем состояние
+    gameState.currentRoom = room_id;
+    gameState.gameStatus = 'ready';
+
+    showGameUI();
+    showStatus("Присоединились к комнате! Игра началась!");
+    subscribeToUpdates();
+
+  } catch (error) {
+    console.error('Error joining room:', error);
+    throw error;
   }
-
-  if (data.player_count >= 2) {
-    throw new Error("Комната уже заполнена!");
-  }
-
-  // Обновляем количество игроков
-  const { error: updateError } = await supabaseClient
-    .from("games")
-    .update({ player_count: 2, status: "ready" })
-    .eq("room_id", room_id);
-
-  if (updateError) {
-    throw new Error(`Ошибка присоединения: ${updateError.message}`);
-  }
-
-  currentRoom = room_id;
-  isPlayer1 = false;
-  showGameUI();
-  showStatus("Присоединились к комнате! Игра началась!");
-  subscribeToUpdates();
 }
 
 // Отображение кнопок выбора
 function showGameUI() {
   const choices = document.getElementById("choices");
-  choices.style.display = "block";
-  document.getElementById("room").disabled = true;
-  document.getElementById("actionButton").style.display = "none";
+  const roomInput = document.getElementById("room");
+  const actionButton = document.getElementById("actionButton");
+
+  if (choices) choices.style.display = "block";
+  if (roomInput) roomInput.disabled = true;
+  if (actionButton) actionButton.style.display = "none";
+
+  // Изначально блокируем кнопки выбора
+  toggleChoiceButtons(false);
 }
 
 // Блокировка/разблокировка кнопок выбора
 function toggleChoiceButtons(enabled) {
-  const buttons = document.querySelectorAll(".choices button");
+  const buttons = document.querySelectorAll(".choice-btn");
   buttons.forEach(button => {
     button.disabled = !enabled;
     button.style.opacity = enabled ? "1" : "0.5";
@@ -178,146 +342,155 @@ function toggleChoiceButtons(enabled) {
 
 // Отправка хода
 async function makeMove(choice) {
-  if (!currentRoom || choicesMade) return;
+  if (!gameState.currentRoom || !supabase) return;
 
-  choicesMade = true;
+  if (gameState.myChoice) {
+    showStatus("Вы уже сделали ход в этом раунде!", true);
+    return;
+  }
+
+  if (gameState.gameStatus !== 'ready' && gameState.gameStatus !== 'playing') {
+    showStatus("Игра еще не готова!", true);
+    return;
+  }
+
+  // Сохраняем выбор локально
+  gameState.myChoice = choice;
   toggleChoiceButtons(false);
-  showStatus("Ваш ход сделан. Ожидание хода оппонента...");
+  showStatus(`Ваш выбор: ${choice}. Ожидание хода оппонента...`);
 
   try {
-    const { data, error } = await supabaseClient
-      .from("games")
-      .select("player1_choice,player2_choice,status")
-      .eq("room_id", currentRoom)
-      .single();
+    // Определяем, какое поле обновлять
+    const updateData = {
+      updated_at: new Date().toISOString()
+    };
 
-    if (error) {
-      throw new Error(`Ошибка загрузки данных: ${error.message}`);
-    }
-
-    // Проверяем, можем ли мы сделать ход
-    const canMakeMove = isPlayer1 ? !data.player1_choice : !data.player2_choice;
-    
-    if (!canMakeMove) {
-      showStatus("Вы уже сделали ход в этом раунде!", true);
-      return;
-    }
-
-    const updateData = {};
-    if (isPlayer1) {
+    if (gameState.isPlayer1) {
       updateData.player1_choice = choice;
     } else {
       updateData.player2_choice = choice;
     }
 
-    const { error: updateError } = await supabaseClient
+    // Если это первый ход в раунде, меняем статус на playing
+    if (gameState.gameStatus === 'ready') {
+      updateData.status = 'playing';
+      gameState.gameStatus = 'playing';
+    }
+
+    const { error } = await supabase
       .from("games")
       .update(updateData)
-      .eq("room_id", currentRoom);
+      .eq("room_id", gameState.currentRoom);
 
-    if (updateError) {
-      throw new Error(`Ошибка отправки хода: ${updateError.message}`);
+    if (error) {
+      throw error;
     }
+
+    console.log('Move sent successfully:', choice);
 
   } catch (error) {
     console.error("Ошибка отправки хода:", error);
-    showStatus(error.message, true);
-    choicesMade = false;
+    showStatus(`Ошибка отправки хода: ${error.message}`, true);
+    
+    // Откатываем изменения
+    gameState.myChoice = null;
     toggleChoiceButtons(true);
   }
 }
 
 // Определение победителя
-function determineWinner(p1, p2) {
-  if (p1 === p2) return "Ничья!";
-  const rules = { камень: "ножницы", ножницы: "бумага", бумага: "камень" };
-  const player1Wins = rules[p1] === p2;
+function determineWinner(player1Choice, player2Choice) {
+  if (player1Choice === player2Choice) {
+    return { winner: 'draw', message: 'Ничья!' };
+  }
   
-  if (isPlayer1) {
-    return player1Wins ? "Вы победили! 🎉" : "Вы проиграли! 😢";
+  const rules = { 
+    'камень': 'ножницы', 
+    'ножницы': 'бумага', 
+    'бумага': 'камень' 
+  };
+  
+  const player1Wins = rules[player1Choice] === player2Choice;
+  
+  if (gameState.isPlayer1) {
+    return {
+      winner: player1Wins ? 'me' : 'opponent',
+      message: player1Wins ? 'Вы победили! 🎉' : 'Вы проиграли! 😢'
+    };
   } else {
-    return player1Wins ? "Вы проиграли! 😢" : "Вы победили! 🎉";
+    return {
+      winner: player1Wins ? 'opponent' : 'me',
+      message: player1Wins ? 'Вы проиграли! 😢' : 'Вы победили! 🎉'
+    };
   }
 }
 
 // Сброс раунда
 async function resetRound() {
-  if (!currentRoom) return;
+  if (!gameState.currentRoom || !supabase) return;
 
   try {
-    await supabaseClient
+    const { error } = await supabase
       .from("games")
       .update({ 
         player1_choice: null, 
         player2_choice: null, 
-        status: "ready" 
+        status: 'ready',
+        updated_at: new Date().toISOString()
       })
-      .eq("room_id", currentRoom);
+      .eq("room_id", gameState.currentRoom);
 
-    choicesMade = false;
-    toggleChoiceButtons(true);
-    showStatus("Новый раунд начинается...");
+    if (error) {
+      throw error;
+    }
+
+    // Сбрасываем локальное состояние
+    gameState.myChoice = null;
+    gameState.opponentChoice = null;
+    gameState.gameStatus = 'ready';
     
-    setTimeout(() => {
-      showStatus("Сделайте свой выбор!");
-    }, 1000);
+    toggleChoiceButtons(true);
+    showStatus("Новый раунд! Сделайте ваш выбор:");
+
+    console.log('Round reset successfully');
 
   } catch (error) {
-    console.error("Ошибка сброса игры:", error);
-    showStatus("Ошибка сброса раунда", true);
+    console.error("Ошибка сброса раунда:", error);
+    showStatus(`Ошибка сброса раунда: ${error.message}`, true);
   }
 }
 
 // Подписка на обновления
 function subscribeToUpdates() {
-  // Закрываем предыдущие подключения
-  if (channel) {
-    supabaseClient.removeChannel(channel);
-  }
+  if (!supabase || !gameState.currentRoom) return;
 
-  channel = supabaseClient
-    .channel(`game-updates-${currentRoom}`)
+  // Закрываем предыдущие подключения
+  cleanup();
+
+  console.log('Subscribing to updates for room:', gameState.currentRoom);
+
+  gameState.channel = supabase
+    .channel(`game-room-${gameState.currentRoom}`)
     .on(
-      "postgres_changes",
+      'postgres_changes',
       {
-        event: "UPDATE",
-        schema: "public",
-        table: "games",
-        filter: `room_id=eq.${currentRoom}`
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'games',
+        filter: `room_id=eq.${gameState.currentRoom}`
       },
       (payload) => {
-        const { player1_choice, player2_choice, player_count, status } = payload.new;
-
-        // Обновляем статус подключения игроков
-        if (player_count === 2 && status === "ready") {
-          showStatus("Оба игрока готовы! Сделайте свой выбор!");
-          toggleChoiceButtons(true);
-        } else if (player_count === 1) {
-          showStatus("Ожидание второго игрока...");
-          toggleChoiceButtons(false);
-        }
-
-        // Обрабатываем результат раунда
-        if (player1_choice && player2_choice) {
-          const result = determineWinner(player1_choice, player2_choice);
-          showStatus(`${result} (Вы: ${isPlayer1 ? player1_choice : player2_choice}, Оппонент: ${isPlayer1 ? player2_choice : player1_choice})`);
-          
-          toggleChoiceButtons(false);
-          
-          // Автоматический сброс через 4 секунды
-          setTimeout(() => {
-            resetRound();
-          }, 4000);
-        }
+        console.log('Received update:', payload);
+        handleGameUpdate(payload.new);
       }
     )
     .on(
-      "postgres_changes",
+      'postgres_changes',
       {
-        event: "DELETE",
-        schema: "public",
-        table: "games",
-        filter: `room_id=eq.${currentRoom}`
+        event: 'DELETE',
+        schema: 'public',
+        table: 'games',
+        filter: `room_id=eq.${gameState.currentRoom}`
       },
       () => {
         showStatus("Игра была завершена", true);
@@ -325,40 +498,95 @@ function subscribeToUpdates() {
       }
     )
     .subscribe((status) => {
-      if (status === "SUBSCRIBED") {
-        console.log("Подключено к игре");
-      } else if (status === "CHANNEL_ERROR") {
-        showStatus("Ошибка подключения. Перезагрузите страницу.", true);
+      console.log('Subscription status:', status);
+      if (status === 'SUBSCRIBED') {
+        console.log('Successfully subscribed to game updates');
+      } else if (status === 'CHANNEL_ERROR') {
+        showStatus("Ошибка подключения к обновлениям. Перезагрузите страницу.", true);
       }
     });
+}
 
-  return channel;
+// Обработка обновлений игры
+function handleGameUpdate(gameData) {
+  const { player1_choice, player2_choice, status, player2_id } = gameData;
+
+  console.log('Handling game update:', gameData);
+
+  // Обновляем статус подключения игроков
+  if (status === 'ready' && player2_id) {
+    if (gameState.gameStatus === 'waiting') {
+      showStatus("Второй игрок присоединился! Сделайте ваш выбор:");
+      toggleChoiceButtons(true);
+    }
+    gameState.gameStatus = 'ready';
+  }
+
+  // Обрабатываем ходы
+  if (player1_choice || player2_choice) {
+    const myChoice = gameState.isPlayer1 ? player1_choice : player2_choice;
+    const opponentChoice = gameState.isPlayer1 ? player2_choice : player1_choice;
+
+    // Обновляем локальное состояние
+    if (myChoice && !gameState.myChoice) {
+      gameState.myChoice = myChoice;
+    }
+    if (opponentChoice && !gameState.opponentChoice) {
+      gameState.opponentChoice = opponentChoice;
+      showStatus(`Оппонент сделал ход: ${opponentChoice}. Ожидание результата...`);
+    }
+
+    // Если оба сделали ходы, показываем результат
+    if (player1_choice && player2_choice) {
+      const result = determineWinner(player1_choice, player2_choice);
+      const myChoiceDisplay = gameState.isPlayer1 ? player1_choice : player2_choice;
+      const opponentChoiceDisplay = gameState.isPlayer1 ? player2_choice : player1_choice;
+      
+      showStatus(`${result.message} (Вы: ${myChoiceDisplay}, Оппонент: ${opponentChoiceDisplay})`);
+      
+      gameState.gameStatus = 'finished';
+      toggleChoiceButtons(false);
+      
+      // Автоматический сброс через 4 секунды
+      setTimeout(() => {
+        resetRound();
+      }, 4000);
+    }
+  }
 }
 
 // Очистка ресурсов
 function cleanup() {
-  if (channel) {
-    supabaseClient.removeChannel(channel);
-    channel = null;
+  if (gameState.channel) {
+    supabase.removeChannel(gameState.channel);
+    gameState.channel = null;
   }
-  currentRoom = null;
-  isPlayer1 = false;
-  gameInProgress = false;
-  choicesMade = false;
+}
+
+// Полная очистка при выходе
+function fullCleanup() {
+  cleanup();
+  gameState = {
+    currentRoom: null,
+    playerId: null,
+    isPlayer1: false,
+    channel: null,
+    myChoice: null,
+    opponentChoice: null,
+    gameStatus: 'idle'
+  };
 }
 
 // Обработка закрытия страницы
 window.addEventListener('beforeunload', () => {
-  cleanup();
+  fullCleanup();
 });
 
 // Обработка потери фокуса страницы
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden && currentRoom) {
-    // Страница скрыта - можно приостановить некритичные операции
+  if (document.hidden && gameState.currentRoom) {
     console.log("Страница скрыта");
-  } else if (!document.hidden && currentRoom) {
-    // Страница видима - возобновляем операции
+  } else if (!document.hidden && gameState.currentRoom) {
     console.log("Страница видима");
   }
 });
