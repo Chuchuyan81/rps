@@ -2,22 +2,39 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Камень, Ножницы, Бумага</title>
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    .choices button {
+      padding: 15px 30px;
+      margin: 10px;
+      font-size: 18px;
+    }
+    #result {
+      font-size: 24px;
+      margin-top: 20px;
+    }
+  </style>
 </head>
 <body>
   <h1>Камень, Ножницы, Бумага</h1>
   <div id="game">
-    <input type="text" id="room" placeholder="Введите ID комнаты" />
-    <button onclick="joinRoom()">Присоединиться</button>
-    <div class="choices">
+    <input type="text" id="room" placeholder="Введите ID комнаты" oninput="updateButton()" />
+    <button id="actionButton" onclick="handleAction()">Создать комнату</button>
+
+    <div class="choices" id="choices" style="display: none;">
       <button onclick="makeMove('камень')">Камень</button>
       <button onclick="makeMove('ножницы')">Ножницы</button>
       <button onclick="makeMove('бумага')">Бумага</button>
     </div>
     <p id="result"></p>
   </div>
+
+  <!-- Подключение Supabase -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script> 
   <script src="script.js"></script>
 </body>
