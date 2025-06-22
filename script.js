@@ -640,15 +640,19 @@ function handleGameUpdate(gameData) {
       const myChoiceDisplay = gameState.isPlayer1 ? player1_choice : player2_choice;
       const opponentChoiceDisplay = gameState.isPlayer1 ? player2_choice : player1_choice;
       
-      showStatus(`${result.message} (Вы: ${myChoiceDisplay}, Оппонент: ${opponentChoiceDisplay})`);
+      // Показываем результат сразу
+      showToast(`${result.message} (Вы: ${myChoiceDisplay}, Оппонент: ${opponentChoiceDisplay})`, 
+                result.winner === 'me' ? 'success' : result.winner === 'draw' ? 'info' : 'error', 
+                5000);
       
       gameState.gameStatus = 'finished';
       toggleChoiceButtons(false);
       
-      // Автоматический сброс через 4 секунды
+      // Предлагаем сыграть снова через 5 секунд
       setTimeout(() => {
+        showStatus("Хотите сыграть еще раз?");
         resetRound();
-      }, 4000);
+      }, 5000);
     }
   }
 }

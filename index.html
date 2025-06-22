@@ -453,24 +453,86 @@
       if (isMobileDevice() && !isPWAInstalled()) {
         console.log('📱 Мобильное устройство обнаружено, подготавливаем установку PWA');
         
-        // Если браузер поддерживает beforeinstallprompt, дождемся его
-        // Иначе покажем кнопку для iOS/Safari
-        if (window.DeviceMotionEvent !== undefined || navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad')) {
-          showIOSInstallPrompt();
-        }
+        // Для iOS показываем кнопку сразу
+        showIOSInstallPrompt();
+        
+        // Для Android кнопка покажется при срабатывании beforeinstallprompt
       }
     }
     
     // Обработка для iOS устройств (Safari)
     function showIOSInstallPrompt() {
-      if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad')) {
-        if (!isPWAInstalled()) {
-          installBtn.style.display = 'flex';
+      // Показываем кнопку для всех мобильных устройств
+      if (!isPWAInstalled() && installBtn) {
+        installBtn.style.display = 'flex';
+        
+        // Для iOS показываем инструкции
+        if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad')) {
           installBtn.onclick = () => {
-            showIOSInstallModal();
+            showIOSInstructions();
           };
         }
+        // Для Android кнопка будет переопределена в beforeinstallprompt
       }
+    }
+    
+    // Показ инструкций для iOS
+    function showIOSInstructions() {
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        padding: 20px;
+        box-sizing: border-box;
+      `;
+      
+      modal.innerHTML = `
+        <div style="
+          background: white;
+          border-radius: 20px;
+          padding: 30px;
+          max-width: 350px;
+          text-align: center;
+          box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        ">
+          <h3 style="margin: 0 0 20px 0; color: #333;">📱 Установить приложение</h3>
+          <div style="text-align: left; margin: 20px 0; line-height: 1.6; color: #666;">
+            <p style="margin: 10px 0;"><strong>1.</strong> Нажмите кнопку "Поделиться" (📤) внизу экрана</p>
+            <p style="margin: 10px 0;"><strong>2.</strong> Выберите "На экран Домой" или "Add to Home Screen"</p>
+            <p style="margin: 10px 0;"><strong>3.</strong> Нажмите "Добавить"</p>
+            <p style="margin: 20px 0 0 0; text-align: center; color: #28a745; font-weight: bold;">
+              🎉 Приложение появится на рабочем столе!
+            </p>
+          </div>
+          <button onclick="this.parentElement.parentElement.remove()" style="
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+          ">Понятно</button>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      
+      // Закрытие по клику вне модального окна
+      modal.onclick = (e) => {
+        if (e.target === modal) {
+          modal.remove();
+        }
+      };
     }
     
     // Обработка события beforeinstallprompt для Android/Chrome
@@ -489,7 +551,8 @@
             const choiceResult = await deferredPrompt.userChoice;
             if (choiceResult.outcome === 'accepted') {
               console.log('✅ Пользователь установил приложение');
-              showToast('Приложение установлено!', 'success');
+              // Используем простое уведомление, так как showToast может быть недоступна
+              alert('Приложение установлено!');
             } else {
               console.log('❌ Пользователь отклонил установку');
             }
@@ -512,7 +575,8 @@
       if (installBtn) {
         installBtn.style.display = 'none';
       }
-      showToast('Приложение успешно установлено!', 'success');
+      // Используем простое уведомление
+      alert('Приложение успешно установлено!');
     });
 
     // Показ статуса подключения
