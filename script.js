@@ -725,3 +725,205 @@ document.addEventListener('visibilitychange', () => {
     console.log("Страница видима");
   }
 });
+
+// === PWA ФУНКЦИОНАЛЬНОСТЬ ===
+
+// Дополнительные функции для управления PWA установкой
+function initializePWAFeatures() {
+  console.log('🚀 Инициализация PWA функций');
+  
+  // Проверяем, если уже в PWA режиме
+  if (isPWAMode()) {
+    console.log('🔧 Приложение запущено в PWA режиме');
+    hidePWAFeatures();
+  }
+  
+  // Добавляем обработчики для кнопки установки
+  setupInstallButton();
+  
+  // Отслеживаем изменения режима отображения
+  watchForPWAMode();
+}
+
+// Проверка PWA режима (более точная)
+function isPWAMode() {
+  const displayMode = getPWADisplayMode();
+  return displayMode === 'pwa' || 
+         window.navigator.standalone === true ||
+         document.referrer.includes('android-app://');
+}
+
+// Получение режима отображения
+function getPWADisplayMode() {
+  if (window.matchMedia('(display-mode: standalone)').matches) {
+    return 'pwa';
+  }
+  if (window.matchMedia('(display-mode: minimal-ui)').matches) {
+    return 'minimal-ui';
+  }
+  if (window.matchMedia('(display-mode: fullscreen)').matches) {
+    return 'fullscreen';
+  }
+  return 'browser';
+}
+
+// Скрытие PWA элементов если уже установлено
+function hidePWAFeatures() {
+  const installBtn = document.getElementById('install-btn');
+  const pwaFeatures = document.querySelector('.pwa-features');
+  
+  if (installBtn) {
+    installBtn.style.display = 'none';
+  }
+  
+  if (pwaFeatures) {
+    pwaFeatures.innerHTML = `
+      <p class="features-text">
+        🎉 <strong>Приложение установлено!</strong>
+        • Работает офлайн • Быстрая загрузка • Доступно с рабочего стола
+      </p>
+    `;
+  }
+}
+
+// Настройка кнопки установки
+function setupInstallButton() {
+  const installBtn = document.getElementById('install-btn');
+  if (!installBtn) return;
+  
+  // Проверяем, нужно ли показывать кнопку
+  if (shouldShowInstallButton()) {
+    // Для iOS показываем сразу
+    if (isIOSDevice() && !isPWAMode()) {
+      showIOSInstallInstructions();
+    }
+    
+    // Для Android ждем событие beforeinstallprompt (уже обработано в HTML)
+  }
+}
+
+// Проверка необходимости показа кнопки установки
+function shouldShowInstallButton() {
+  return isMobileDevice() && 
+         !isPWAMode() && 
+         !localStorage.getItem('pwa-install-dismissed');
+}
+
+// Проверка iOS устройства
+function isIOSDevice() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+
+// Показ инструкций для iOS
+function showIOSInstallInstructions() {
+  const installBtn = document.getElementById('install-btn');
+  if (!installBtn) return;
+  
+  installBtn.style.display = 'block';
+  installBtn.onclick = () => {
+    showIOSInstallModal();
+  };
+}
+
+// Модальное окно для iOS
+function showIOSInstallModal() {
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+    box-sizing: border-box;
+  `;
+  
+  modal.innerHTML = `
+    <div style="
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      max-width: 350px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    ">
+      <h3 style="margin: 0 0 20px 0; color: #333;">📱 Установить приложение</h3>
+      <div style="text-align: left; margin: 20px 0; line-height: 1.6; color: #666;">
+        <p style="margin: 10px 0;"><strong>1.</strong> Нажмите кнопку "Поделиться" (📤) внизу экрана</p>
+        <p style="margin: 10px 0;"><strong>2.</strong> Выберите "На экран Домой" или "Add to Home Screen"</p>
+        <p style="margin: 10px 0;"><strong>3.</strong> Нажмите "Добавить"</p>
+        <p style="margin: 20px 0 0 0; text-align: center; color: #28a745; font-weight: bold;">
+          🎉 Приложение появится на рабочем столе!
+        </p>
+      </div>
+      <button onclick="this.parentElement.parentElement.remove()" style="
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 25px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 10px;
+      ">Понятно</button>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Закрытие по клику вне модального окна
+  modal.onclick = (e) => {
+    if (e.target === modal) {
+      modal.remove();
+    }
+  };
+}
+
+// Отслеживание изменений PWA режима
+function watchForPWAMode() {
+  // Проверяем при изменении медиа-запросов
+  const mediaQuery = window.matchMedia('(display-mode: standalone)');
+  mediaQuery.addEventListener('change', (e) => {
+    if (e.matches) {
+      console.log('🎉 Переключение в PWA режим');
+      hidePWAFeatures();
+    }
+  });
+}
+
+// Проверка мобильного устройства (улучшенная)
+function isMobileDevice() {
+  // Проверка User Agent
+  const userAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  // Проверка сенсорного экрана
+  const touchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  
+  // Проверка размера экрана
+  const smallScreen = window.innerWidth <= 768;
+  
+  // Проверка iPad с клавиатурой (определяется как desktop)
+  const iPadPro = navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /MacIntel/.test(navigator.platform);
+  
+  return userAgent || (touchScreen && smallScreen) || iPadPro;
+}
+
+// Инициализация при загрузке DOM
+document.addEventListener('DOMContentLoaded', () => {
+  // Небольшая задержка для загрузки других скриптов
+  setTimeout(initializePWAFeatures, 100);
+});
+
+// Дополнительная проверка при загрузке страницы
+window.addEventListener('load', () => {
+  console.log('📋 PWA статус при загрузке:');
+  console.log('- Мобильное устройство:', isMobileDevice());
+  console.log('- PWA режим:', isPWAMode());
+  console.log('- Режим отображения:', getPWADisplayMode());
+  console.log('- iOS устройство:', isIOSDevice());
+});

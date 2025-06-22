@@ -97,7 +97,7 @@
         
         <!-- Кнопка установки PWA -->
         <button id="install-btn" class="install-btn" style="display: none;">
-          📱 Установить приложение
+          📱 Скачать приложение
         </button>
         
         <div class="pwa-features">
@@ -150,32 +150,81 @@
       });
     }
 
-    // Обработка события "Установить приложение"
+    // Обработка установки PWA
     let deferredPrompt;
+    let installBtn;
     
+    // Функция проверки мобильного устройства
+    function isMobileDevice() {
+      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+             (navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /MacIntel/.test(navigator.platform));
+    }
+    
+    // Функция проверки PWA режима
+    function isPWAInstalled() {
+      return window.matchMedia('(display-mode: standalone)').matches ||
+             window.navigator.standalone === true ||
+             document.referrer.includes('android-app://');
+    }
+    
+    // Инициализация кнопки установки
+    function initInstallButton() {
+      installBtn = document.getElementById('install-btn');
+      if (!installBtn) return;
+      
+      // Показываем кнопку только на мобильных устройствах и если PWA не установлено
+      if (isMobileDevice() && !isPWAInstalled()) {
+        console.log('📱 Мобильное устройство обнаружено, подготавливаем установку PWA');
+        
+        // Если браузер поддерживает beforeinstallprompt, дождемся его
+        // Иначе покажем кнопку для iOS/Safari
+        if (window.DeviceMotionEvent !== undefined || navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad')) {
+          showIOSInstallPrompt();
+        }
+      }
+    }
+    
+    // Обработка для iOS устройств (Safari)
+    function showIOSInstallPrompt() {
+      if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad')) {
+        if (!isPWAInstalled()) {
+          installBtn.style.display = 'block';
+          installBtn.onclick = () => {
+            alert('Для установки приложения:\n\n1. Нажмите кнопку "Поделиться" (📤) внизу экрана\n2. Выберите "На экран Домой"\n3. Нажмите "Добавить"\n\nПриложение появится на рабочем столе!');
+          };
+        }
+      }
+    }
+    
+    // Обработка события beforeinstallprompt для Android/Chrome
     window.addEventListener('beforeinstallprompt', (e) => {
-      console.log('💾 Приложение можно установить');
+      console.log('💾 Приложение можно установить (Android/Chrome)');
       e.preventDefault();
       deferredPrompt = e;
       
-      // Показываем кнопку установки (если есть)
-      const installBtn = document.getElementById('install-btn');
-      if (installBtn) {
+      // Показываем кнопку только на мобильных устройствах
+      if (isMobileDevice() && installBtn) {
         installBtn.style.display = 'block';
-        installBtn.addEventListener('click', () => {
+        installBtn.onclick = async () => {
           installBtn.style.display = 'none';
-          deferredPrompt.prompt();
-          deferredPrompt.userChoice.then((choiceResult) => {
+          try {
+            await deferredPrompt.prompt();
+            const choiceResult = await deferredPrompt.userChoice;
             if (choiceResult.outcome === 'accepted') {
               console.log('✅ Пользователь установил приложение');
             } else {
               console.log('❌ Пользователь отклонил установку');
             }
-            deferredPrompt = null;
-          });
-        });
+          } catch (error) {
+            console.error('Ошибка при установке:', error);
+          }
+          deferredPrompt = null;
+        };
       }
     });
+    
+    // Инициализация при загрузке страницы
+    document.addEventListener('DOMContentLoaded', initInstallButton);
 
     // Отслеживание установки
     window.addEventListener('appinstalled', (e) => {
