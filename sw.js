@@ -3,7 +3,7 @@
  * Обеспечивает кэширование ресурсов и работу в офлайне
  */
 
-const CACHE_NAME = 'rps-game-v1.0.0';
+const CACHE_NAME = 'rps-game-v1.0.1';
 const CACHE_URLS = [
   '/',
   '/index.html',
@@ -12,6 +12,16 @@ const CACHE_URLS = [
   '/manifest.json',
   '/debug.html',
   '/test-room-logic.html',
+  '/favicon.ico',
+  // Иконки
+  '/icons/icon-16x16.png',
+  '/icons/icon-32x32.png',
+  '/icons/icon-48x48.png',
+  '/icons/icon-72x72.png',
+  '/icons/icon-96x96.png',
+  '/icons/icon-144x144.png',
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png',
   // Внешние ресурсы
   'https://unpkg.com/@supabase/supabase-js@2'
 ];
