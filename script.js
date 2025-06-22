@@ -322,7 +322,7 @@ async function createRoom() {
   }
 
   // Переключаемся на секцию ожидания
-  showSection('waitingSection');
+      showGameState('waitingState');
   displayRoomCode(room_id);
   
   showStatus(`Комната ${room_id} создана! Ожидание второго игрока...`);
@@ -437,7 +437,7 @@ async function joinRoom(room_id) {
     gameState.gameStatus = 'ready';
 
     // Переключаемся на игровую секцию
-    showSection('gameSection');
+    showGameState('playingState');
     resetPlayerChoices();
     
     showStatus("Присоединились к комнате! Игра началась!");
@@ -670,7 +670,7 @@ function handleGameUpdate(gameData) {
     if (gameState.gameStatus === 'waiting') {
       showStatus("Второй игрок присоединился! Сделайте ваш выбор:");
       // Переключаемся на игровую секцию
-      showSection('gameSection');
+      showGameState('playingState');
       resetPlayerChoices();
     }
     gameState.gameStatus = 'ready';
@@ -898,8 +898,6 @@ function isIOSDevice() {
   return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 }
 
-
-
 // Модальное окно для iOS
 function showIOSInstallModal() {
   const modal = document.createElement('div');
@@ -1036,189 +1034,6 @@ function toggleMenu() {
 // Показать случайную игру
 function showRandomDialog() {
   showToast("Функция в разработке", 'info');
-}
-
-// Показать доступные комнаты
-async function showAvailableRooms() {
-  if (!supabase) {
-    showStatus("Supabase не инициализирован", true);
-    return;
-  }
-
-  showLoader(true);
-  showStatus("Поиск доступных комнат...");
-
-  try {
-    // Получаем все комнаты, которые ожидают второго игрока
-    const { data: availableRooms, error } = await supabase
-      .from('games')
-      .select('room_id, created_at')
-      .eq('status', 'waiting')
-      .is('player2_id', null)
-      .order('created_at', { ascending: false })
-      .limit(10);
-
-    if (error) {
-      console.error('Ошибка получения доступных комнат:', error);
-      showStatus("Ошибка получения списка комнат", true);
-      return;
-    }
-
-    if (!availableRooms || availableRooms.length === 0) {
-      showToast("Нет доступных комнат. Создайте новую!", 'info');
-      showStatus("Нет доступных комнат");
-      return;
-    }
-
-    // Создаем модальное окно со списком комнат
-    showAvailableRoomsModal(availableRooms);
-
-  } catch (error) {
-    console.error('Ошибка при поиске комнат:', error);
-    showStatus("Произошла ошибка при поиске комнат", true);
-  } finally {
-    showLoader(false);
-  }
-}
-
-// Показать модальное окно с доступными комнатами
-function showAvailableRoomsModal(rooms) {
-  // Удаляем существующее модальное окно если есть
-  const existingModal = document.getElementById('availableRoomsModal');
-  if (existingModal) {
-    existingModal.remove();
-  }
-
-  const modal = document.createElement('div');
-  modal.id = 'availableRoomsModal';
-  modal.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10000;
-    padding: 20px;
-    box-sizing: border-box;
-  `;
-
-  const roomsList = rooms.map(room => {
-    const timeAgo = getTimeAgo(room.created_at);
-    return `
-      <div class="room-item" onclick="joinRoomFromList('${room.room_id}')" style="
-        background: rgba(255, 255, 255, 0.1);
-        padding: 12px 16px;
-        border-radius: 12px;
-        margin-bottom: 8px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      " onmouseover="this.style.background='rgba(255, 255, 255, 0.2)'" 
-         onmouseout="this.style.background='rgba(255, 255, 255, 0.1)'">
-        <div>
-          <div style="font-weight: 600; font-size: 18px; color: #6366f1;">Комната ${room.room_id}</div>
-          <div style="font-size: 12px; color: #94a3b8;">Создана ${timeAgo}</div>
-        </div>
-        <div style="color: #10b981; font-size: 12px;">Присоединиться →</div>
-      </div>
-    `;
-  }).join('');
-
-  modal.innerHTML = `
-    <div style="
-      background: #1e293b;
-      border-radius: 20px;
-      padding: 24px;
-      max-width: 400px;
-      width: 100%;
-      max-height: 80vh;
-      overflow-y: auto;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-    ">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h3 style="margin: 0; color: #f8fafc; font-size: 20px;">Доступные комнаты</h3>
-        <button onclick="this.closest('#availableRoomsModal').remove()" style="
-          background: rgba(255,255,255,0.1);
-          border: none;
-          width: 32px;
-          height: 32px;
-          border-radius: 8px;
-          color: #f8fafc;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        ">✕</button>
-      </div>
-      <div style="color: #cbd5e1; margin-bottom: 16px; font-size: 14px;">
-        Найдено комнат: ${rooms.length}
-      </div>
-      <div class="rooms-list">
-        ${roomsList}
-      </div>
-      <div style="margin-top: 16px; text-align: center;">
-        <button onclick="this.closest('#availableRoomsModal').remove()" style="
-          background: rgba(255,255,255,0.1);
-          border: none;
-          padding: 10px 20px;
-          border-radius: 12px;
-          color: #cbd5e1;
-          cursor: pointer;
-          font-size: 14px;
-        ">Закрыть</button>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-
-  // Закрытие по клику вне модального окна
-  modal.onclick = (e) => {
-    if (e.target === modal) {
-      modal.remove();
-    }
-  };
-}
-
-// Присоединиться к комнате из списка
-async function joinRoomFromList(roomId) {
-  // Закрываем модальное окно
-  const modal = document.getElementById('availableRoomsModal');
-  if (modal) {
-    modal.remove();
-  }
-
-  // Заполняем поле ввода и присоединяемся
-  const roomInput = document.getElementById("roomInput");
-  if (roomInput) {
-    roomInput.value = roomId;
-    updateButton();
-  }
-
-  await joinRoom(roomId);
-}
-
-// Получить время "назад" для отображения
-function getTimeAgo(dateString) {
-  const now = new Date();
-  const created = new Date(dateString);
-  const diffMs = now - created;
-  const diffMins = Math.floor(diffMs / 60000);
-  
-  if (diffMins < 1) return 'только что';
-  if (diffMins < 60) return `${diffMins} мин назад`;
-  
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours} ч назад`;
-  
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays} дн назад`;
 }
 
 // Показать доступные комнаты
