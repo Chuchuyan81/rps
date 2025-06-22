@@ -619,7 +619,7 @@ function handleGameUpdate(gameData) {
     }
     if (opponentChoice && !gameState.opponentChoice) {
       gameState.opponentChoice = opponentChoice;
-      showStatus(`Оппонент сделал ход: ${opponentChoice}. Ожидание результата...`);
+      showStatus("Оппонент сделал ход. Ожидание результата...");
     }
 
     // Если оба сделали ходы, показываем результат
