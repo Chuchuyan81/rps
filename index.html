@@ -23,8 +23,8 @@
   <meta name="apple-mobile-web-app-title" content="RPS Game">
   
   <!-- Favicon и иконки -->
-  <link rel="icon" type="image/x-icon" href="/icons/android/android-launchericon-48-48.png">
-  <link rel="apple-touch-icon" href="/icons/ios/180.png">
+  <link rel="icon" type="image/x-icon" href="icons/android/android-launchericon-48-48.png">
+  <link rel="apple-touch-icon" href="icons/android/android-launchericon-192-192.png">
   <link rel="manifest" href="manifest.json">
   
   <!-- Шрифты -->
@@ -246,7 +246,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const registration = await navigator.serviceWorker.register('/sw.js');
+          const registration = await navigator.serviceWorker.register('sw.js');
           console.log('✅ Service Worker зарегистрирован:', registration.scope);
           
           // Обработка обновлений SW

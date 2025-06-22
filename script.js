@@ -1031,6 +1031,26 @@ function toggleMenu() {
   }
 }
 
+// Показать определенное состояние игры
+function showGameState(stateName) {
+  console.log(`Переключение на состояние: ${stateName}`);
+  
+  // Скрываем все состояния
+  const allStates = document.querySelectorAll('.game-state');
+  allStates.forEach(state => {
+    state.style.display = 'none';
+  });
+  
+  // Показываем нужное состояние
+  const targetState = document.getElementById(stateName);
+  if (targetState) {
+    targetState.style.display = 'block';
+    console.log(`Состояние ${stateName} активировано`);
+  } else {
+    console.error(`Состояние ${stateName} не найдено`);
+  }
+}
+
 // Показать случайную игру
 function showRandomDialog() {
   showToast("Функция в разработке", 'info');
@@ -1200,6 +1220,50 @@ async function joinRoomFromList(roomId) {
   }
 
   await joinRoom(roomId);
+}
+
+// Отображение кода комнаты
+function displayRoomCode(roomCode) {
+  const roomCodeBig = document.getElementById('roomCodeBig');
+  const roomCodeMini = document.getElementById('roomCodeMini');
+  
+  if (roomCodeBig) {
+    roomCodeBig.textContent = roomCode;
+  }
+  if (roomCodeMini) {
+    roomCodeMini.textContent = roomCode;
+  }
+}
+
+// Копирование кода комнаты
+function copyRoomCode() {
+  const roomCode = gameState.currentRoom;
+  if (roomCode) {
+    navigator.clipboard.writeText(roomCode).then(() => {
+      showToast("Код комнаты скопирован!", 'success');
+    }).catch(() => {
+      // Fallback для старых браузеров
+      const textArea = document.createElement('textarea');
+      textArea.value = roomCode;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      showToast("Код комнаты скопирован!", 'success');
+    });
+  }
+}
+
+// Обновление статуса подключения
+function updateConnectionStatus(isOnline) {
+  const dot = document.getElementById('connectionDot');
+  if (dot) {
+    if (isOnline) {
+      dot.classList.remove('offline');
+    } else {
+      dot.classList.add('offline');
+    }
+  }
 }
 
 // Получить время "назад" для отображения
