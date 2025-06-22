@@ -270,10 +270,36 @@ async function createRoom() {
   subscribeToUpdates();
 }
 
+// Очистка старых/поврежденных комнат (опционально)
+async function cleanupOldRooms() {
+  try {
+    // Удаляем комнаты старше 1 часа
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    
+    const { error } = await supabase
+      .from("games")
+      .delete()
+      .lt("created_at", oneHourAgo);
+
+    if (error) {
+      console.error('Ошибка очистки старых комнат:', error);
+    } else {
+      console.log('Старые комнаты очищены');
+    }
+  } catch (error) {
+    console.error('Исключение при очистке:', error);
+  }
+}
+
 // Присоединение к комнате
 async function joinRoom(room_id) {
-  // Генерируем уникальный ID игрока
-  gameState.playerId = generatePlayerId();
+  // Опциональная очистка старых комнат перед присоединением
+  await cleanupOldRooms();
+  
+  // Генерируем уникальный ID игрока только если его еще нет
+  if (!gameState.playerId) {
+    gameState.playerId = generatePlayerId();
+  }
   gameState.isPlayer1 = false;
 
   try {
@@ -295,15 +321,31 @@ async function joinRoom(room_id) {
       throw new Error("Комната не найдена!");
     }
 
-    if (existingGame.player2_id) {
+    console.log('Найдена комната для присоединения:', existingGame);
+    console.log('Текущий playerId:', gameState.playerId);
+    console.log('Player1 ID в комнате:', existingGame.player1_id);
+    console.log('Player2 ID в комнате:', existingGame.player2_id);
+
+    // Проверяем, что игрок не пытается присоединиться к своей же комнате
+    // НО: пропускаем эту проверку, так как у разных сессий разные playerId
+    // if (existingGame.player1_id === gameState.playerId) {
+    //   throw new Error("Нельзя присоединиться к своей собственной комнате!");
+    // }
+
+    // Проверяем заполненность комнаты
+    if (existingGame.player2_id && existingGame.player2_id.trim() !== '') {
+      console.log('Комната уже заполнена. player2_id:', existingGame.player2_id);
       throw new Error("Комната уже заполнена!");
     }
 
     if (existingGame.status !== 'waiting_player2') {
+      console.log('Статус комнаты не подходит для присоединения:', existingGame.status);
       throw new Error("Комната недоступна для присоединения!");
     }
 
-    // Присоединяемся к комнате
+    console.log('Все проверки пройдены, присоединяемся к комнате...');
+
+    // Присоединяемся к комнате с дополнительными условиями
     const { data: updatedGame, error: updateError } = await supabase
       .from("games")
       .update({ 
@@ -312,18 +354,24 @@ async function joinRoom(room_id) {
         updated_at: new Date().toISOString()
       })
       .eq("room_id", room_id)
-      .eq("player2_id", null) // Дополнительная проверка для избежания race condition
+      .eq("status", "waiting_player2") // Проверяем статус
+      .is("player2_id", null) // Используем is() для проверки NULL
       .select()
       .single();
 
     if (updateError) {
+      console.error('Ошибка при обновлении комнаты:', updateError);
       if (updateError.code === 'PGRST116') {
-        throw new Error("Комната уже заполнена!");
+        throw new Error("Комната уже заполнена или недоступна!");
       }
       throw updateError;
     }
 
-    console.log('Successfully joined room:', updatedGame);
+    if (!updatedGame) {
+      throw new Error("Не удалось присоединиться к комнате. Возможно, она уже заполнена.");
+    }
+
+    console.log('Успешно присоединились к комнате:', updatedGame);
 
     // Обновляем состояние
     gameState.currentRoom = room_id;
@@ -334,7 +382,7 @@ async function joinRoom(room_id) {
     subscribeToUpdates();
 
   } catch (error) {
-    console.error('Error joining room:', error);
+    console.error('Ошибка присоединения к комнате:', error);
     throw error;
   }
 }
