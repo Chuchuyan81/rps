@@ -379,6 +379,10 @@ async function joinRoom(room_id) {
 
     showGameUI();
     showStatus("Присоединились к комнате! Игра началась!");
+    
+    // Активируем кнопки для игрока 2 сразу после присоединения
+    toggleChoiceButtons(true);
+    
     subscribeToUpdates();
 
   } catch (error) {
@@ -403,8 +407,13 @@ function showGameUI() {
     actionButton.onclick = () => fullCleanup();
   }
 
-  // Изначально блокируем кнопки выбора
-  toggleChoiceButtons(false);
+  // Активируем кнопки если игра готова (особенно важно для игрока 2)
+  if (gameState.gameStatus === 'ready') {
+    toggleChoiceButtons(true);
+  } else {
+    // Изначально блокируем кнопки выбора для ожидания
+    toggleChoiceButtons(false);
+  }
 }
 
 // Блокировка/разблокировка кнопок выбора
@@ -593,9 +602,10 @@ function handleGameUpdate(gameData) {
   if (status === 'ready' && player2_id) {
     if (gameState.gameStatus === 'waiting') {
       showStatus("Второй игрок присоединился! Сделайте ваш выбор:");
-      toggleChoiceButtons(true);
     }
     gameState.gameStatus = 'ready';
+    // Активируем кнопки для обоих игроков когда игра готова
+    toggleChoiceButtons(true);
   }
 
   // Обрабатываем ходы
