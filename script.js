@@ -43,6 +43,9 @@ window.addEventListener('DOMContentLoaded', () => {
     console.log('Глобальная переменная window.supabaseClient доступна для тестирования');
     showStatus("Готов к игре! Создайте комнату или присоединитесь к существующей.");
     
+    // Загружаем статистику при инициализации
+    updateStatsDisplay();
+    
     // Тестируем подключение
     testConnection();
     
@@ -846,6 +849,19 @@ function handleGameUpdate(gameData) {
       // Показываем выбор оппонента только сейчас
       updatePlayerChoice(false, opponentChoiceDisplay);
       
+      // Обновляем статистику в зависимости от результата
+      let wins = 0, losses = 0, draws = 0;
+      if (result.winner === 'me') {
+        wins = 1;
+      } else if (result.winner === 'opponent') {
+        losses = 1;
+      } else if (result.winner === 'draw') {
+        draws = 1;
+      }
+      
+      // Инкрементируем статистику
+      incrementStats(wins, losses, draws);
+      
       // Показываем большое модальное окно с результатом
       showGameResult(result.message, myChoiceDisplay, opponentChoiceDisplay, result.winner);
       
@@ -1427,6 +1443,30 @@ function getTimeAgo(dateString) {
 }
 
 // Обновление статистики
+// Инкрементирование статистики (добавляет к существующим значениям)
+function incrementStats(wins = 0, losses = 0, draws = 0) {
+  // Получаем текущую статистику из localStorage
+  const currentWins = parseInt(localStorage.getItem('rps_wins') || '0');
+  const currentLosses = parseInt(localStorage.getItem('rps_losses') || '0');
+  const currentDraws = parseInt(localStorage.getItem('rps_draws') || '0');
+  
+  // Увеличиваем значения
+  const newWins = currentWins + wins;
+  const newLosses = currentLosses + losses;
+  const newDraws = currentDraws + draws;
+  
+  // Сохраняем в localStorage
+  localStorage.setItem('rps_wins', newWins.toString());
+  localStorage.setItem('rps_losses', newLosses.toString());
+  localStorage.setItem('rps_draws', newDraws.toString());
+  
+  // Обновляем отображение
+  updateStatsDisplay();
+  
+  console.log(`📊 Статистика обновлена: Побед: ${newWins}, Поражений: ${newLosses}, Ничьих: ${newDraws}`);
+}
+
+// Установка статистики (устанавливает абсолютные значения)
 function updateStats(wins = 0, losses = 0, draws = 0) {
   // Обновляем статистику в localStorage если переданы параметры
   if (arguments.length > 0) {
@@ -1435,6 +1475,12 @@ function updateStats(wins = 0, losses = 0, draws = 0) {
     localStorage.setItem('rps_draws', draws.toString());
   }
   
+  // Обновляем отображение
+  updateStatsDisplay();
+}
+
+// Обновление отображения статистики
+function updateStatsDisplay() {
   // Получаем текущую статистику из localStorage
   const currentWins = parseInt(localStorage.getItem('rps_wins') || '0');
   const currentLosses = parseInt(localStorage.getItem('rps_losses') || '0');
@@ -1448,6 +1494,20 @@ function updateStats(wins = 0, losses = 0, draws = 0) {
   if (winsEl) winsEl.textContent = currentWins;
   if (lossesEl) lossesEl.textContent = currentLosses;
   if (drawsEl) drawsEl.textContent = currentDraws;
+}
+
+// Сброс статистики
+function resetStats() {
+  // Подтверждение сброса
+  if (confirm('Вы уверены, что хотите сбросить всю статистику? Это действие нельзя отменить.')) {
+    localStorage.removeItem('rps_wins');
+    localStorage.removeItem('rps_losses');
+    localStorage.removeItem('rps_draws');
+    
+    updateStatsDisplay();
+    showToast('Статистика сброшена', 'success');
+    console.log('📊 Статистика сброшена');
+  }
 }
 
 // Обновление выборов игроков
