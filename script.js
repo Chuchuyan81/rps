@@ -541,6 +541,9 @@ async function resetRound() {
     gameState.opponentChoice = null;
     gameState.gameStatus = 'ready';
     
+    // Сбрасываем отображение выборов игроков
+    resetPlayerChoices();
+    
     toggleChoiceButtons(true);
     showStatus("Новый раунд! Сделайте ваш выбор:");
 
@@ -630,7 +633,7 @@ function handleGameUpdate(gameData) {
     }
     if (opponentChoice && !gameState.opponentChoice) {
       gameState.opponentChoice = opponentChoice;
-      updatePlayerChoice(false, opponentChoice);
+      // НЕ показываем выбор оппонента до результата
       showStatus("Оппонент сделал ход. Ожидание результата...");
     }
 
@@ -640,10 +643,11 @@ function handleGameUpdate(gameData) {
       const myChoiceDisplay = gameState.isPlayer1 ? player1_choice : player2_choice;
       const opponentChoiceDisplay = gameState.isPlayer1 ? player2_choice : player1_choice;
       
-      // Показываем результат сразу
-      showToast(`${result.message} (Вы: ${myChoiceDisplay}, Оппонент: ${opponentChoiceDisplay})`, 
-                result.winner === 'me' ? 'success' : result.winner === 'draw' ? 'info' : 'error', 
-                5000);
+      // Показываем выбор оппонента только сейчас
+      updatePlayerChoice(false, opponentChoiceDisplay);
+      
+      // Показываем большое модальное окно с результатом
+      showGameResult(result.message, myChoiceDisplay, opponentChoiceDisplay, result.winner);
       
       gameState.gameStatus = 'finished';
       toggleChoiceButtons(false);
@@ -1268,4 +1272,174 @@ document.addEventListener('DOMContentLoaded', () => {
   
   console.log('🎨 Новый UI инициализирован');
 });
+
+// Показ результата игры в большом модальном окне
+function showGameResult(message, myChoice, opponentChoice, winner) {
+  const modal = document.createElement('div');
+  modal.className = 'game-result-modal';
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+    box-sizing: border-box;
+    animation: fadeIn 0.3s ease;
+  `;
+
+  // Определяем цвет и эмодзи в зависимости от результата
+  let bgColor, emoji, borderColor;
+  switch(winner) {
+    case 'me':
+      bgColor = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+      borderColor = '#10b981';
+      emoji = '🎉';
+      break;
+    case 'opponent':
+      bgColor = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+      borderColor = '#ef4444';
+      emoji = '😢';
+      break;
+    case 'draw':
+      bgColor = 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)';
+      borderColor = '#6366f1';
+      emoji = '🤝';
+      break;
+    default:
+      bgColor = 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)';
+      borderColor = '#6366f1';
+      emoji = '🎮';
+  }
+
+  // Функция для получения эмодзи выбора
+  const getChoiceEmoji = (choice) => {
+    switch(choice) {
+      case 'камень': return '🪨';
+      case 'ножницы': return '✂️';
+      case 'бумага': return '📄';
+      default: return '❓';
+    }
+  };
+
+  modal.innerHTML = `
+    <div style="
+      background: white;
+      border-radius: 24px;
+      padding: 40px 30px;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+      border: 3px solid ${borderColor};
+      animation: scaleIn 0.4s ease;
+    ">
+      <div style="
+        width: 80px;
+        height: 80px;
+        background: ${bgColor};
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px auto;
+        font-size: 36px;
+      ">${emoji}</div>
+      
+      <h2 style="
+        margin: 0 0 30px 0; 
+        color: #1f2937; 
+        font-size: 28px;
+        font-weight: 700;
+      ">${message}</h2>
+      
+      <div style="
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        margin: 30px 0;
+        padding: 20px;
+        background: #f8fafc;
+        border-radius: 16px;
+        border: 2px solid #e2e8f0;
+      ">
+        <div style="text-align: center;">
+          <div style="font-size: 48px; margin-bottom: 8px;">${getChoiceEmoji(myChoice)}</div>
+          <div style="font-weight: 600; color: #374151; font-size: 16px;">Вы</div>
+          <div style="color: #6b7280; font-size: 14px;">${myChoice}</div>
+        </div>
+        
+        <div style="
+          font-size: 24px; 
+          font-weight: bold; 
+          color: #6b7280;
+          margin: 0 20px;
+        ">VS</div>
+        
+        <div style="text-align: center;">
+          <div style="font-size: 48px; margin-bottom: 8px;">${getChoiceEmoji(opponentChoice)}</div>
+          <div style="font-weight: 600; color: #374151; font-size: 16px;">Оппонент</div>
+          <div style="color: #6b7280; font-size: 14px;">${opponentChoice}</div>
+        </div>
+      </div>
+      
+      <div style="
+        margin-top: 30px;
+        padding: 16px;
+        background: ${bgColor};
+        border-radius: 12px;
+        color: white;
+        font-weight: 600;
+        font-size: 16px;
+      ">
+        Следующий раунд через 5 секунд...
+      </div>
+    </div>
+  `;
+
+  // Добавляем CSS анимации
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes scaleIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+  `;
+  document.head.appendChild(style);
+
+  document.body.appendChild(modal);
+
+  // Закрытие модального окна через 5 секунд
+  setTimeout(() => {
+    modal.style.animation = 'fadeOut 0.3s ease';
+    setTimeout(() => {
+      modal.remove();
+      style.remove();
+    }, 300);
+  }, 5000);
+
+  // Закрытие по клику вне модального окна
+  modal.onclick = (e) => {
+    if (e.target === modal) {
+      modal.style.animation = 'fadeOut 0.3s ease';
+      setTimeout(() => {
+        modal.remove();
+        style.remove();
+      }, 300);
+    }
+  };
+}
 
