@@ -112,16 +112,23 @@ function showLoader(show = true) {
 
 // Валидация room_id
 function validateRoomId(roomId) {
+  console.log(`validateRoomId called with: "${roomId}"`);
   const trimmed = roomId.trim();
+  console.log(`Trimmed value: "${trimmed}"`);
+  
   if (trimmed.length === 0) {
+    console.log("Validation failed: empty room ID");
     return { valid: false, message: "ID комнаты не может быть пустым" };
   }
   if (trimmed.length !== 4) {
+    console.log(`Validation failed: wrong length (${trimmed.length})`);
     return { valid: false, message: "ID комнаты должен содержать ровно 4 цифры" };
   }
   if (!/^\d{4}$/.test(trimmed)) {
+    console.log("Validation failed: not digits only");
     return { valid: false, message: "ID комнаты должен содержать только цифры" };
   }
+  console.log("Validation passed");
   return { valid: true, roomId: trimmed };
 }
 
@@ -164,6 +171,9 @@ async function handleAction() {
   showStatus("");
 
   try {
+    console.log(`Button text: "${actionButton.textContent}"`);
+    console.log(`Room input value: "${room_id}"`);
+    
     if (actionButton.textContent.includes("Создать")) {
       console.log("Creating new room...");
       await createRoom();
@@ -172,6 +182,7 @@ async function handleAction() {
       // Валидация только при присоединении к комнате
       const validation = validateRoomId(room_id);
       if (!validation.valid) {
+        console.log(`Validation failed: ${validation.message}`);
         showStatus(validation.message, true);
         showLoader(false);
         return;
