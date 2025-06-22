@@ -87,21 +87,29 @@ async function testConnection() {
 
 // Показать статус игры
 function showStatus(message, isError = false) {
-  const resultEl = document.getElementById("result");
-  if (resultEl) {
-    resultEl.innerText = message;
-    resultEl.className = `result ${isError ? 'error' : ''}`;
+  const statusEl = document.getElementById("statusMessage");
+  if (statusEl) {
+    statusEl.innerText = message;
   }
   console.log(`Status: ${message}`);
+  
+  // Показываем toast для ошибок
+  if (isError) {
+    showToast(message, 'error');
+  }
 }
 
 // Показать лоадер
 function showLoader(show = true) {
   const actionButton = document.getElementById("actionButton");
+  const buttonText = actionButton?.querySelector('.btn-text');
+  
   if (actionButton) {
     actionButton.disabled = show;
     if (show) {
-      actionButton.textContent = "Загрузка...";
+      if (buttonText) {
+        buttonText.textContent = "Загрузка...";
+      }
       actionButton.classList.add('loading');
     } else {
       actionButton.classList.remove('loading');
@@ -129,8 +137,7 @@ function validateRoomId(roomId) {
 function updateButton() {
   const roomInput = document.getElementById("roomInput");
   const actionButton = document.getElementById("actionButton");
-  const buttonText = actionButton?.querySelector('.button-text');
-  const buttonIcon = actionButton?.querySelector('.button-icon');
+  const buttonText = actionButton?.querySelector('.btn-text');
 
   if (!roomInput || !actionButton || !buttonText) return;
 
@@ -141,15 +148,9 @@ function updateButton() {
   // И "Присоединиться" когда поле заполнено
   if (roomInput.value.trim() === "") {
     buttonText.textContent = "Создать комнату";
-    if (buttonIcon) {
-      buttonIcon.innerHTML = '<path d="M10 4V16M4 10H16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>';
-    }
     console.log("Button set to: Создать комнату");
   } else {
     buttonText.textContent = "Присоединиться";
-    if (buttonIcon) {
-      buttonIcon.innerHTML = '<path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
-    }
     console.log(`Button set to: Присоединиться (Room ID: ${roomInput.value})`);
   }
 }
@@ -163,7 +164,7 @@ async function handleAction() {
 
   const roomInput = document.getElementById("roomInput");
   const actionButton = document.getElementById("actionButton");
-  const buttonText = actionButton?.querySelector('.button-text');
+  const buttonText = actionButton?.querySelector('.btn-text');
   
   if (!roomInput || !actionButton || !buttonText) return;
 
@@ -406,11 +407,22 @@ async function joinRoom(room_id) {
 
 // Отображение кнопок выбора
 function showGameUI() {
-  // Переключаемся на игровую секцию
-  showSection('gameSection');
+  // Переключаемся на игровое состояние
+  showGameState('playingState');
   
-  const roomInput = document.getElementById("roomInput");
-  if (roomInput) roomInput.disabled = true;
+  // Показываем кнопку выхода
+  const exitBtn = document.getElementById('exitBtn');
+  if (exitBtn) {
+    exitBtn.style.display = 'block';
+  }
+  
+  // Показываем информацию о комнате
+  const roomInfo = document.getElementById('roomInfo');
+  const roomCodeMini = document.getElementById('roomCodeMini');
+  if (roomInfo && roomCodeMini && gameState.currentRoom) {
+    roomCodeMini.textContent = gameState.currentRoom;
+    roomInfo.style.display = 'block';
+  }
 
   // Активируем кнопки если игра готова (особенно важно для игрока 2)
   if (gameState.gameStatus === 'ready') {
@@ -423,7 +435,7 @@ function showGameUI() {
 
 // Блокировка/разблокировка кнопок выбора
 function toggleChoiceButtons(enabled) {
-  const buttons = document.querySelectorAll(".choice-card");
+  const buttons = document.querySelectorAll(".choice-btn");
   buttons.forEach(button => {
     button.disabled = !enabled;
     button.style.opacity = enabled ? "1" : "0.5";
@@ -708,14 +720,20 @@ async function fullCleanup() {
 
   // Сброс UI
   const roomInput = document.getElementById("roomInput");
+  const exitBtn = document.getElementById('exitBtn');
+  const roomInfo = document.getElementById('roomInfo');
 
   if (roomInput) {
     roomInput.disabled = false;
     roomInput.value = "";
   }
+  
+  // Скрываем кнопку выхода и информацию о комнате
+  if (exitBtn) exitBtn.style.display = 'none';
+  if (roomInfo) roomInfo.style.display = 'none';
 
-  // Возвращаемся к начальной секции
-  showSection('roomSection');
+  // Возвращаемся к начальному состоянию
+  showGameState('roomState');
   resetPlayerChoices();
   updateButton();
 
@@ -952,18 +970,39 @@ function clearInput() {
   }
 }
 
+// Управление боковым меню
+function toggleMenu() {
+  const sideMenu = document.getElementById('sideMenu');
+  const menuOverlay = document.getElementById('menuOverlay');
+  
+  if (sideMenu && menuOverlay) {
+    const isOpen = sideMenu.classList.contains('open');
+    
+    if (isOpen) {
+      sideMenu.classList.remove('open');
+      menuOverlay.classList.remove('open');
+    } else {
+      sideMenu.classList.add('open');
+      menuOverlay.classList.add('open');
+    }
+  }
+}
+
+// Показать случайную игру
+function showRandomDialog() {
+  showToast('Поиск случайной игры...', 'info');
+  // Здесь можно добавить логику поиска случайной игры
+}
+
 // Обновление статуса подключения
 function updateConnectionStatus(isOnline) {
-  const statusIndicator = document.getElementById('statusIndicator');
-  const statusText = document.getElementById('statusText');
+  const connectionDot = document.getElementById('connectionDot');
   
-  if (statusIndicator && statusText) {
+  if (connectionDot) {
     if (isOnline) {
-      statusIndicator.className = 'status-indicator online';
-      statusText.textContent = 'Онлайн';
+      connectionDot.classList.remove('offline');
     } else {
-      statusIndicator.className = 'status-indicator offline';
-      statusText.textContent = 'Офлайн';
+      connectionDot.classList.add('offline');
     }
   }
 }
@@ -979,38 +1018,52 @@ function updateProgressBar(step) {
   });
 }
 
-// Переключение секций
-function showSection(sectionName) {
-  const sections = ['roomSection', 'waitingSection', 'gameSection'];
-  sections.forEach(section => {
-    const el = document.getElementById(section);
-    if (el) {
-      el.style.display = section === sectionName ? 'block' : 'none';
+// Показать состояние игры
+function showGameState(stateName) {
+  // Скрываем все состояния
+  const states = ['roomState', 'waitingState', 'playingState'];
+  states.forEach(state => {
+    const element = document.getElementById(state);
+    if (element) {
+      element.style.display = 'none';
     }
   });
   
-  // Обновляем прогресс-бар
-  const progressMap = {
-    'roomSection': 0,
-    'waitingSection': 1,
-    'gameSection': 2
+  // Показываем нужное состояние
+  const targetState = document.getElementById(stateName);
+  if (targetState) {
+    targetState.style.display = 'block';
+  }
+  
+  // Обновляем статус подключения
+  updateConnectionStatus(true);
+}
+
+// Переключение секций (для обратной совместимости)
+function showSection(sectionName) {
+  const stateMap = {
+    'roomSection': 'roomState',
+    'waitingSection': 'waitingState', 
+    'gameSection': 'playingState'
   };
-  updateProgressBar(progressMap[sectionName] || 0);
+  
+  const stateName = stateMap[sectionName] || sectionName;
+  showGameState(stateName);
 }
 
 // Показ кода комнаты в секции ожидания
 function displayRoomCode(roomCode) {
-  const roomCodeDisplay = document.getElementById('roomCodeDisplay');
-  if (roomCodeDisplay) {
-    roomCodeDisplay.textContent = roomCode;
+  const roomCodeBig = document.getElementById('roomCodeBig');
+  if (roomCodeBig) {
+    roomCodeBig.textContent = roomCode;
   }
 }
 
 // Копирование кода комнаты
 function copyRoomCode() {
-  const roomCodeDisplay = document.getElementById('roomCodeDisplay');
-  if (roomCodeDisplay && roomCodeDisplay.textContent !== '----') {
-    navigator.clipboard.writeText(roomCodeDisplay.textContent).then(() => {
+  const roomCodeBig = document.getElementById('roomCodeBig');
+  if (roomCodeBig && roomCodeBig.textContent !== '----') {
+    navigator.clipboard.writeText(roomCodeBig.textContent).then(() => {
       showToast('Код комнаты скопирован!', 'success');
     }).catch(() => {
       showToast('Не удалось скопировать код', 'error');
@@ -1100,8 +1153,10 @@ function updateStats(wins = 0, losses = 0, draws = 0) {
 
 // Обновление выборов игроков
 function updatePlayerChoice(isMyChoice, choice) {
-  const targetId = isMyChoice ? 'myChoiceDisplay' : 'opponentChoiceDisplay';
+  const targetId = isMyChoice ? 'myChoice' : 'opponentChoice';
   const element = document.getElementById(targetId);
+  const statusId = isMyChoice ? 'myStatus' : 'opponentStatus';
+  const statusElement = document.getElementById(statusId);
   
   if (element) {
     const emojiMap = {
@@ -1112,18 +1167,30 @@ function updatePlayerChoice(isMyChoice, choice) {
     
     element.innerHTML = `<div class="choice-result">${emojiMap[choice] || choice}</div>`;
   }
+  
+  if (statusElement) {
+    statusElement.textContent = isMyChoice ? 'Ход сделан' : 'Ход сделан';
+  }
 }
 
 // Сброс выборов игроков
 function resetPlayerChoices() {
-  const myChoice = document.getElementById('myChoiceDisplay');
-  const opponentChoice = document.getElementById('opponentChoiceDisplay');
+  const myChoice = document.getElementById('myChoice');
+  const opponentChoice = document.getElementById('opponentChoice');
+  const myStatus = document.getElementById('myStatus');
+  const opponentStatus = document.getElementById('opponentStatus');
   
   if (myChoice) {
     myChoice.innerHTML = '<div class="choice-placeholder">?</div>';
   }
   if (opponentChoice) {
     opponentChoice.innerHTML = '<div class="choice-placeholder">?</div>';
+  }
+  if (myStatus) {
+    myStatus.textContent = 'Ваш ход';
+  }
+  if (opponentStatus) {
+    opponentStatus.textContent = 'Ожидание';
   }
 }
 

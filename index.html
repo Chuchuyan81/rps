@@ -1,389 +1,235 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Многопользовательская игра Камень, Ножницы, Бумага онлайн в реальном времени" />
-  <meta name="keywords" content="игра, камень ножницы бумага, онлайн, многопользовательская, PWA" />
-  <meta name="author" content="RPS Game" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Камень, Ножницы, Бумага - Онлайн игра</title>
   
-  <!-- PWA метаданные -->
-  <meta name="theme-color" content="#6366f1" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="RPS Game" />
-  <meta name="application-name" content="Камень, Ножницы, Бумага" />
-  <meta name="msapplication-TileColor" content="#6366f1" />
-  <meta name="msapplication-navbutton-color" content="#6366f1" />
+  <!-- SEO мета-теги -->
+  <meta name="description" content="Играйте в камень, ножницы, бумага онлайн с друзьями в реальном времени. Создавайте комнаты и соревнуйтесь!">
+  <meta name="keywords" content="камень ножницы бумага, онлайн игра, игра с друзьями, rock paper scissors">
+  <meta name="author" content="RPS Game">
   
-  <!-- Open Graph метаданные -->
-  <meta property="og:type" content="website" />
-  <meta property="og:title" content="Камень, Ножницы, Бумага - Онлайн игра" />
-  <meta property="og:description" content="Многопользовательская игра в реальном времени. Создавайте комнаты и играйте с друзьями!" />
-  <meta property="og:image" content="/icons/icon-512x512.png" />
-  <meta property="og:url" content="/" />
-  <meta property="og:site_name" content="RPS Game" />
+  <!-- Open Graph -->
+  <meta property="og:title" content="Камень, Ножницы, Бумага - Онлайн">
+  <meta property="og:description" content="Играйте в камень, ножницы, бумага онлайн с друзьями">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="/icons/android/android-launchericon-192-192.png">
   
-  <!-- Twitter метаданные -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Камень, Ножницы, Бумага" />
-  <meta name="twitter:description" content="Многопользовательская игра в реальном времени" />
-  <meta name="twitter:image" content="/icons/icon-512x512.png" />
+  <!-- PWA мета-теги -->
+  <meta name="theme-color" content="#6366f1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="RPS Game">
   
-  <title>Камень, Ножницы, Бумага - PWA Игра</title>
+  <!-- Favicon и иконки -->
+  <link rel="icon" type="image/x-icon" href="/icons/android/android-launchericon-48-48.png">
+  <link rel="apple-touch-icon" href="/icons/ios/180.png">
+  <link rel="manifest" href="manifest.json">
   
-  <!-- PWA манифест -->
-  <link rel="manifest" href="/manifest.json" />
-  
-  <!-- Иконки для разных устройств -->
-  <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180x180.png" />
-  <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
-  <link rel="apple-touch-icon" sizes="144x144" href="/icons/icon-144x144.png" />
-  <link rel="apple-touch-icon" sizes="120x120" href="/icons/icon-120x120.png" />
-  <link rel="apple-touch-icon" sizes="114x114" href="/icons/icon-114x114.png" />
-  <link rel="apple-touch-icon" sizes="76x76" href="/icons/icon-76x76.png" />
-  <link rel="apple-touch-icon" sizes="72x72" href="/icons/icon-72x72.png" />
-  <link rel="apple-touch-icon" sizes="60x60" href="/icons/icon-60x60.png" />
-  <link rel="apple-touch-icon" sizes="57x57" href="/icons/icon-57x57.png" />
-  
-  <!-- Google Fonts -->
+  <!-- Шрифты -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   
   <!-- Стили -->
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <!-- Анимированный фон -->
-  <div class="background-animation">
-    <div class="floating-shapes">
-      <div class="shape shape-1"></div>
-      <div class="shape shape-2"></div>
-      <div class="shape shape-3"></div>
-      <div class="shape shape-4"></div>
-      <div class="shape shape-5"></div>
-    </div>
-  </div>
 
-  <!-- Основной контейнер -->
-  <div class="app-container">
-    <!-- Заголовок приложения -->
-    <header class="app-header">
-      <div class="header-content">
-        <div class="logo-section">
-          <div class="logo-icon">
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-              <circle cx="16" cy="16" r="16" fill="url(#logo-gradient)"/>
-              <path d="M22 12L14 20L10 16" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <defs>
-                <linearGradient id="logo-gradient" x1="0" y1="0" x2="32" y2="32">
-                  <stop stop-color="#6366f1"/>
-                  <stop offset="1" stop-color="#8b5cf6"/>
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
-          <div class="logo-text">
-            <h1 class="app-title">Камень, Ножницы, Бумага</h1>
-            <p class="app-subtitle">Онлайн игра в реальном времени</p>
-          </div>
-        </div>
-        
-        <!-- Индикатор подключения -->
-        <div class="connection-status" id="connectionStatus">
-          <div class="status-indicator online" id="statusIndicator"></div>
-          <span class="status-text" id="statusText">Онлайн</span>
+<body>
+  <!-- Игровой экран -->
+  <div class="game-screen" id="gameScreen">
+    <!-- Верхняя панель с иконками -->
+    <div class="top-bar">
+      <div class="top-left">
+        <button class="icon-btn" id="menuBtn" onclick="toggleMenu()" aria-label="Меню">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M3 12H21M3 6H21M3 18H21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <div class="room-info" id="roomInfo" style="display: none;">
+          <span class="room-code-mini" id="roomCodeMini">----</span>
         </div>
       </div>
-    </header>
+      
+      <div class="top-right">
+        <div class="connection-dot" id="connectionDot"></div>
+        <button class="icon-btn" id="exitBtn" onclick="fullCleanup()" style="display: none;" aria-label="Выход">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
 
-    <!-- Основная игровая область -->
-    <main class="game-main">
-      <!-- Карточка игры -->
-      <div class="game-card" id="gameCard">
-        <!-- Прогресс-бар состояния -->
-        <div class="progress-bar">
-          <div class="progress-step active" data-step="room">
-            <div class="step-number">1</div>
-            <span class="step-label">Комната</span>
-          </div>
-          <div class="progress-connector"></div>
-          <div class="progress-step" data-step="waiting">
-            <div class="step-number">2</div>
-            <span class="step-label">Ожидание</span>
-          </div>
-          <div class="progress-connector"></div>
-          <div class="progress-step" data-step="playing">
-            <div class="step-number">3</div>
-            <span class="step-label">Игра</span>
-          </div>
-        </div>
-
-        <!-- Секция управления комнатой -->
-        <section class="room-section" id="roomSection">
-          <div class="section-header">
-            <h2 class="section-title">Присоединиться к игре</h2>
-            <p class="section-description">Создайте новую комнату или присоединитесь к существующей</p>
-          </div>
-
-          <div class="room-controls">
-            <div class="input-group">
-              <label for="roomInput" class="input-label">ID комнаты</label>
-              <div class="input-container">
-                <input 
-                  type="text" 
-                  id="roomInput" 
-                  class="room-input"
-                  placeholder="1234" 
-                  oninput="updateButton()" 
-                  maxlength="4"
-                  pattern="[0-9]*"
-                  autocomplete="off"
-                  inputmode="numeric"
-                  aria-describedby="room-help"
-                />
-                <div class="input-suffix">
-                  <button type="button" class="input-clear" id="clearButton" onclick="clearInput()" aria-label="Очистить поле">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-              <div class="input-help" id="room-help">Введите 4-значный код комнаты или создайте новую</div>
-            </div>
-
-            <div class="action-buttons">
-              <button id="actionButton" onclick="handleAction()" class="primary-button">
-                <span class="button-content">
-                  <svg class="button-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <path d="M10 4V16M4 10H16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                  </svg>
-                  <span class="button-text">Создать комнату</span>
-                </span>
-                <div class="button-ripple"></div>
-              </button>
-              
-              <button class="secondary-button" onclick="showRandomRoomDialog()">
-                <span class="button-content">
-                  <svg class="button-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <path d="M16 4L4 16M8 4L16 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                  </svg>
-                  <span class="button-text">Случайная игра</span>
-                </span>
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <!-- Секция ожидания оппонента -->
-        <section class="waiting-section" id="waitingSection" style="display: none;">
-          <div class="waiting-content">
-            <div class="waiting-animation">
-              <div class="pulse-loader">
-                <div class="pulse-dot"></div>
-                <div class="pulse-dot"></div>
-                <div class="pulse-dot"></div>
-              </div>
-            </div>
-            <h3 class="waiting-title">Ожидание оппонента</h3>
-            <p class="waiting-description">Поделитесь кодом комнаты с другом</p>
-            <div class="room-code-display">
-              <span class="room-code" id="roomCodeDisplay">----</span>
-              <button class="copy-button" onclick="copyRoomCode()" aria-label="Скопировать код">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M4 4H12V12H4V4Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                  <path d="M8 2H14V8" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                </svg>
-              </button>
-            </div>
-            
-            <button class="secondary-button" onclick="fullCleanup()" style="margin-top: 20px;">
-              <span class="button-content">
-                <svg class="button-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-                <span class="button-text">Закончить игру</span>
-              </span>
+    <!-- Основное игровое поле -->
+    <div class="game-field">
+      <!-- Секция создания комнаты -->
+      <div class="game-state" id="roomState">
+        <div class="center-content">
+          <div class="game-logo">🎮</div>
+          <h1 class="game-title">Камень Ножницы Бумага</h1>
+          
+          <div class="room-input-container">
+            <input 
+              type="text" 
+              id="roomInput" 
+              class="room-input-field"
+              placeholder="Код комнаты" 
+              oninput="updateButton()" 
+              maxlength="4"
+              pattern="[0-9]*"
+              autocomplete="off"
+              inputmode="numeric"
+            />
+            <button class="clear-btn" onclick="clearInput()" aria-label="Очистить">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
             </button>
-          </div>
-        </section>
-
-        <!-- Секция игрового процесса -->
-        <section class="game-section" id="gameSection" style="display: none;">
-          <div class="game-header">
-            <h3 class="game-title">Сделайте ваш выбор</h3>
-            <div class="game-timer" id="gameTimer">
-              <div class="timer-circle">
-                <svg width="40" height="40" viewBox="0 0 40 40">
-                  <circle cx="20" cy="20" r="18" fill="none" stroke="#e5e7eb" stroke-width="2"/>
-                  <circle cx="20" cy="20" r="18" fill="none" stroke="#6366f1" stroke-width="2" 
-                          stroke-dasharray="113" stroke-dashoffset="113" class="timer-progress"/>
-                </svg>
-                <span class="timer-text">30</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="choices-grid">
-            <button class="choice-card" onclick="makeMove('камень')" data-choice="rock" aria-label="Выбрать камень">
-              <div class="choice-icon">
-                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                  <circle cx="24" cy="24" r="20" fill="currentColor" opacity="0.1"/>
-                  <text x="24" y="32" text-anchor="middle" font-size="24">🪨</text>
-                </svg>
-              </div>
-              <span class="choice-label">Камень</span>
-              <div class="choice-ripple"></div>
-            </button>
-
-            <button class="choice-card" onclick="makeMove('ножницы')" data-choice="scissors" aria-label="Выбрать ножницы">
-              <div class="choice-icon">
-                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                  <circle cx="24" cy="24" r="20" fill="currentColor" opacity="0.1"/>
-                  <text x="24" y="32" text-anchor="middle" font-size="24">✂️</text>
-                </svg>
-              </div>
-              <span class="choice-label">Ножницы</span>
-              <div class="choice-ripple"></div>
-            </button>
-
-            <button class="choice-card" onclick="makeMove('бумага')" data-choice="paper" aria-label="Выбрать бумагу">
-              <div class="choice-icon">
-                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                  <circle cx="24" cy="24" r="20" fill="currentColor" opacity="0.1"/>
-                  <text x="24" y="32" text-anchor="middle" font-size="24">📄</text>
-                </svg>
-              </div>
-              <span class="choice-label">Бумага</span>
-              <div class="choice-ripple"></div>
-            </button>
-          </div>
-
-          <!-- Индикатор выборов игроков -->
-          <div class="players-status">
-            <div class="player-card">
-              <div class="player-avatar">
-                <div class="avatar-circle">Вы</div>
-              </div>
-              <div class="player-choice" id="myChoiceDisplay">
-                <div class="choice-placeholder">?</div>
-              </div>
-            </div>
-
-            <div class="vs-separator">
-              <span class="vs-text">VS</span>
-            </div>
-
-            <div class="player-card">
-              <div class="player-avatar">
-                <div class="avatar-circle">Оппонент</div>
-              </div>
-              <div class="player-choice" id="opponentChoiceDisplay">
-                <div class="choice-placeholder">?</div>
-              </div>
-            </div>
           </div>
           
-          <div class="game-actions" style="margin-top: 20px; text-align: center;">
-            <button class="secondary-button" onclick="fullCleanup()">
-              <span class="button-content">
-                <svg class="button-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-                <span class="button-text">Закончить игру</span>
-              </span>
+          <div class="action-buttons">
+            <button id="actionButton" onclick="handleAction()" class="primary-btn">
+              <span class="btn-text">Создать комнату</span>
             </button>
-          </div>
-        </section>
-
-        <!-- Область результатов -->
-        <div class="result-section" id="resultSection">
-          <div class="status-message" id="statusMessage" role="status" aria-live="polite">
-            Готов к игре! Создайте комнату или присоединитесь к существующей.
+            <button class="secondary-btn" onclick="showRandomDialog()">
+              <span class="btn-text">Случайная игра</span>
+            </button>
           </div>
         </div>
       </div>
 
-      <!-- Боковая панель с информацией -->
-      <aside class="info-sidebar">
+      <!-- Секция ожидания -->
+      <div class="game-state" id="waitingState" style="display: none;">
+        <div class="center-content">
+          <div class="waiting-animation">
+            <div class="pulse-dots">
+              <div class="dot"></div>
+              <div class="dot"></div>
+              <div class="dot"></div>
+            </div>
+          </div>
+          <h2 class="state-title">Ожидание игрока</h2>
+          <div class="room-code-big" id="roomCodeBig">----</div>
+          <p class="state-description">Поделитесь кодом с другом</p>
+          <button class="copy-btn" onclick="copyRoomCode()">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M4 4H12V12H4V4Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+              <path d="M8 2H14V8" stroke="currentColor" stroke-width="1.5" fill="none"/>
+            </svg>
+            Скопировать код
+          </button>
+        </div>
+      </div>
+
+      <!-- Секция игры -->
+      <div class="game-state" id="playingState" style="display: none;">
+        <!-- Статус игроков -->
+        <div class="players-area">
+          <div class="player-status">
+            <div class="player-avatar">
+              <div class="avatar">Вы</div>
+            </div>
+            <div class="player-choice" id="myChoice">
+              <div class="choice-placeholder">?</div>
+            </div>
+            <div class="player-status-text" id="myStatus">Ваш ход</div>
+          </div>
+          
+          <div class="vs-divider">
+            <span class="vs-text">VS</span>
+          </div>
+          
+          <div class="player-status">
+            <div class="player-avatar">
+              <div class="avatar">Оппонент</div>
+            </div>
+            <div class="player-choice" id="opponentChoice">
+              <div class="choice-placeholder">?</div>
+            </div>
+            <div class="player-status-text" id="opponentStatus">Ожидание</div>
+          </div>
+        </div>
+
+        <!-- Выбор хода -->
+        <div class="choices-area">
+          <button class="choice-btn" onclick="makeMove('камень')" data-choice="rock">
+            <div class="choice-emoji">🪨</div>
+            <span class="choice-name">Камень</span>
+          </button>
+          <button class="choice-btn" onclick="makeMove('ножницы')" data-choice="scissors">
+            <div class="choice-emoji">✂️</div>
+            <span class="choice-name">Ножницы</span>
+          </button>
+          <button class="choice-btn" onclick="makeMove('бумага')" data-choice="paper">
+            <div class="choice-emoji">📄</div>
+            <span class="choice-name">Бумага</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Боковое меню -->
+    <div class="side-menu" id="sideMenu">
+      <div class="menu-header">
+        <h3>Меню</h3>
+        <button class="close-menu-btn" onclick="toggleMenu()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      
+      <div class="menu-content">
         <!-- Статистика -->
-        <div class="info-card">
-          <h3 class="info-title">Ваша статистика</h3>
-          <div class="stats-grid">
-            <div class="stat-item">
+        <div class="menu-section">
+          <h4>Статистика</h4>
+          <div class="stats-row">
+            <div class="stat">
               <div class="stat-value" id="winsCount">0</div>
               <div class="stat-label">Побед</div>
             </div>
-            <div class="stat-item">
+            <div class="stat">
               <div class="stat-value" id="lossesCount">0</div>
               <div class="stat-label">Поражений</div>
             </div>
-            <div class="stat-item">
+            <div class="stat">
               <div class="stat-value" id="drawsCount">0</div>
               <div class="stat-label">Ничьих</div>
             </div>
           </div>
         </div>
 
-        <!-- Правила игры -->
-        <div class="info-card">
-          <h3 class="info-title">Правила</h3>
-          <div class="rules-list">
-            <div class="rule-item">
-              <span class="rule-emoji">🪨</span>
-              <span class="rule-text">Камень побеждает ножницы</span>
-            </div>
-            <div class="rule-item">
-              <span class="rule-emoji">✂️</span>
-              <span class="rule-text">Ножницы побеждают бумагу</span>
-            </div>
-            <div class="rule-item">
-              <span class="rule-emoji">📄</span>
-              <span class="rule-text">Бумага побеждает камень</span>
-            </div>
+        <!-- Правила -->
+        <div class="menu-section">
+          <h4>Правила</h4>
+          <div class="rules">
+            <div class="rule">🪨 побеждает ✂️</div>
+            <div class="rule">✂️ побеждает 📄</div>
+            <div class="rule">📄 побеждает 🪨</div>
           </div>
         </div>
 
-        <!-- PWA установка -->
-        <div class="info-card pwa-card" id="pwaCard">
-          <h3 class="info-title">Установить приложение</h3>
-          <p class="pwa-description">
-            Установите приложение для быстрого доступа и работы офлайн
-          </p>
-          <button id="install-btn" class="install-button" style="display: none;">
-            <svg class="button-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <!-- PWA -->
+        <div class="menu-section" id="pwaSection">
+          <h4>Приложение</h4>
+          <button id="install-btn" class="install-btn" style="display: none;">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M10 2V14M10 14L6 10M10 14L14 10M3 17H17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            <span>Скачать приложение</span>
+            Установить
           </button>
         </div>
-      </aside>
-    </main>
-  </div>
+      </div>
+    </div>
 
-  <!-- Модальные окна -->
-  <div class="modal-overlay" id="modalOverlay">
-    <div class="modal" id="randomRoomModal">
-      <div class="modal-header">
-        <h3 class="modal-title">Случайная игра</h3>
-        <button class="modal-close" onclick="closeModal()" aria-label="Закрыть">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
-      </div>
-      <div class="modal-body">
-        <p>Присоединиться к случайной игре с другими игроками?</p>
-      </div>
-      <div class="modal-footer">
-        <button class="secondary-button" onclick="closeModal()">Отмена</button>
-        <button class="primary-button" onclick="findRandomGame()">Найти игру</button>
-      </div>
+    <!-- Оверлей для меню -->
+    <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
+
+    <!-- Статус сообщение -->
+    <div class="status-bar" id="statusBar">
+      <span id="statusMessage">Готов к игре!</span>
     </div>
   </div>
 
