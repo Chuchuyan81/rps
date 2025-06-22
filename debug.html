@@ -65,8 +65,16 @@
 
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script>
-        const supabaseUrl = "https://kdbbyqsdmucjvsatbiog.supabase.co";
-        const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkYmJ5cXNkbXVjanZzYXRiaW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0MzQxNzcsImV4cCI6MjA2NjAxMDE3N30.v6wR9s1zCyYL-xN2Rohoi35LJ-f1uA1Y5KPPjQoXhLU";
+        // ВНИМАНИЕ: Этот файл только для разработки!
+        // В продакшене удалите этот файл или ограничьте доступ
+        const supabaseUrl = window.SUPABASE_URL || "https://kdbbyqsdmucjvsatbiog.supabase.co";
+        const supabaseKey = window.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkYmJ5cXNkbXVjanZzYXRiaW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0MzQxNzcsImV4cCI6MjA2NjAxMDE3N30.v6wR9s1zCyYL-xN2Rohoi35LJ-f1uA1Y5KPPjQoXhLU";
+        
+        // Проверка безопасности - блокируем в продакшене
+        if (location.protocol === 'https:' && location.hostname !== 'localhost') {
+          document.body.innerHTML = '<h1 style="color: red;">⚠️ ДОСТУП ЗАПРЕЩЕН</h1><p>Отладочная страница недоступна в продакшене</p>';
+          throw new Error('Debug page blocked in production');
+        }
         
         let supabaseClient = null;
 

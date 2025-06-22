@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Камень, Ножницы, Бумага - Онлайн игра</title>
   
+  <!-- Безопасность: Content Security Policy -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://kdbbyqsdmucjvsatbiog.supabase.co https://unpkg.com https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://kdbbyqsdmucjvsatbiog.supabase.co wss://*.supabase.co;">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="X-Frame-Options" content="DENY">
+  <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  
   <!-- SEO мета-теги -->
   <meta name="description" content="Играйте в камень, ножницы, бумага онлайн с друзьями в реальном времени. Создавайте комнаты и соревнуйтесь!">
   <meta name="keywords" content="камень ножницы бумага, онлайн игра, игра с друзьями, rock paper scissors">
@@ -34,6 +41,15 @@
   
   <!-- Стили -->
   <link rel="stylesheet" href="style.css">
+  
+  <!-- Конфигурация -->
+  <script src="config.js"></script>
+  <script>
+    // Проверка загрузки конфигурации
+    if (!window.CONFIG_LOADED) {
+      console.warn('⚠️ ВНИМАНИЕ: config.js не загружен. Используются настройки по умолчанию.');
+    }
+  </script>
 </head>
 
 <body>
@@ -81,6 +97,9 @@
               pattern="[0-9]*"
               autocomplete="off"
               inputmode="numeric"
+              spellcheck="false"
+              data-lpignore="true"
+              required
             />
             <button class="clear-btn" onclick="clearInput()" aria-label="Очистить">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

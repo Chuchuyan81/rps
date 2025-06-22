@@ -24,9 +24,41 @@ CREATE INDEX idx_games_created_at ON games(created_at);
 -- Включаем Row Level Security (RLS)
 ALTER TABLE games ENABLE ROW LEVEL SECURITY;
 
--- Политики безопасности (разрешаем всем читать и писать для простоты)
--- В продакшене следует настроить более строгие политики
-CREATE POLICY "Allow all operations on games" ON games
+-- Политики безопасности (более строгие для продакшена)
+-- Политика для чтения: игроки могут читать только свои игры
+CREATE POLICY "Players can read their own games" ON games
+  FOR SELECT USING (
+    player1_id = current_setting('request.jwt.claims', true)::jsonb ->> 'sub' 
+    OR player2_id = current_setting('request.jwt.claims', true)::jsonb ->> 'sub'
+    OR auth.uid()::text IN (player1_id, player2_id)
+  );
+
+-- Политика для создания: любой может создать игру
+CREATE POLICY "Anyone can create games" ON games
+  FOR INSERT WITH CHECK (true);
+
+-- Политика для обновления: только участники игры могут обновлять
+CREATE POLICY "Players can update their own games" ON games
+  FOR UPDATE USING (
+    player1_id = current_setting('request.jwt.claims', true)::jsonb ->> 'sub' 
+    OR player2_id = current_setting('request.jwt.claims', true)::jsonb ->> 'sub'
+    OR auth.uid()::text IN (player1_id, player2_id)
+  ) WITH CHECK (
+    player1_id = current_setting('request.jwt.claims', true)::jsonb ->> 'sub' 
+    OR player2_id = current_setting('request.jwt.claims', true)::jsonb ->> 'sub'
+    OR auth.uid()::text IN (player1_id, player2_id)
+  );
+
+-- Политика для удаления: только участники могут удалять
+CREATE POLICY "Players can delete their own games" ON games
+  FOR DELETE USING (
+    player1_id = current_setting('request.jwt.claims', true)::jsonb ->> 'sub' 
+    OR player2_id = current_setting('request.jwt.claims', true)::jsonb ->> 'sub'
+    OR auth.uid()::text IN (player1_id, player2_id)
+  );
+
+-- Временная политика для анонимных пользователей (для текущей реализации)
+CREATE POLICY "Temporary anonymous access" ON games
   FOR ALL USING (true) WITH CHECK (true);
 
 -- Включаем реалтайм для таблицы

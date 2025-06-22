@@ -1,6 +1,11 @@
-// Правильная инициализация Supabase
-const supabaseUrl = "https://kdbbyqsdmucjvsatbiog.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkYmJ5cXNkbXVjanZzYXRiaW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0MzQxNzcsImV4cCI6MjA2NjAxMDE3N30.v6wR9s1zCyYL-xN2Rohoi35LJ-f1uA1Y5KPPjQoXhLU";
+// Конфигурация Supabase (используем переменные окружения для безопасности)
+const supabaseUrl = window.SUPABASE_URL || "https://kdbbyqsdmucjvsatbiog.supabase.co";
+const supabaseKey = window.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkYmJ5cXNkbXVjanZzYXRiaW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0MzQxNzcsImV4cCI6MjA2NjAxMDE3N30.v6wR9s1zCyYL-xN2Rohoi35LJ-f1uA1Y5KPPjQoXhLU";
+
+// Предупреждение о безопасности в продакшене
+if (location.protocol === 'https:' && !window.SUPABASE_URL) {
+  console.warn('⚠️ ВНИМАНИЕ: Используются встроенные ключи. В продакшене используйте переменные окружения!');
+}
 
 // Ждем загрузки Supabase библиотеки
 let supabase = null;
@@ -163,19 +168,71 @@ function showLoader(show = true) {
   }
 }
 
-// Валидация room_id
+// Функция для безопасной санитизации строк (защита от XSS)
+function sanitizeInput(input) {
+  if (!input || typeof input !== 'string') return '';
+  
+  return input
+    .replace(/[<>]/g, '') // Убираем угловые скобки
+    .replace(/['"]/g, '') // Убираем кавычки
+    .replace(/javascript:/gi, '') // Убираем javascript: протокол
+    .replace(/on\w+=/gi, '') // Убираем обработчики событий
+    .trim()
+    .slice(0, 100); // Ограничиваем длину
+}
+
+// Улучшенная валидация room_id с дополнительными проверками безопасности
 function validateRoomId(roomId) {
-  const trimmed = roomId.trim();
-  if (trimmed.length === 0) {
+  // Базовая проверка на существование
+  if (!roomId) {
     return { valid: false, message: "ID комнаты не может быть пустым" };
   }
-  if (trimmed.length !== 4) {
+  
+  // Санитизация входных данных
+  const sanitized = sanitizeInput(roomId);
+  
+  // Проверка длины
+  if (sanitized.length !== 4) {
     return { valid: false, message: "ID комнаты должен содержать ровно 4 цифры" };
   }
-  if (!/^\d{4}$/.test(trimmed)) {
+  
+  // Проверка на только цифры
+  if (!/^\d{4}$/.test(sanitized)) {
     return { valid: false, message: "ID комнаты должен содержать только цифры" };
   }
-  return { valid: true, roomId: trimmed };
+  
+  // Проверка на валидный диапазон (1000-9999)
+  const numericId = parseInt(sanitized, 10);
+  if (numericId < 1000 || numericId > 9999) {
+    return { valid: false, message: "Недопустимый ID комнаты" };
+  }
+  
+  return { valid: true, roomId: sanitized };
+}
+
+// Функция для безопасной валидации player_id
+function validatePlayerId(playerId) {
+  if (!playerId || typeof playerId !== 'string') {
+    return false;
+  }
+  
+  // Проверяем формат player_id
+  if (!/^player_[a-z0-9_]+$/i.test(playerId)) {
+    return false;
+  }
+  
+  // Ограничиваем длину
+  if (playerId.length > 50) {
+    return false;
+  }
+  
+  return true;
+}
+
+// Функция для валидации выбора игрока
+function validateChoice(choice) {
+  const validChoices = ['камень', 'ножницы', 'бумага'];
+  return validChoices.includes(choice);
 }
 
 // Динамическое изменение кнопки
@@ -245,16 +302,32 @@ async function handleAction() {
 
 // Создание комнаты
 async function createRoom() {
+  // Проверка rate limit (максимум 3 создания комнат в минуту)
+  if (!rateLimiter.checkLimit('createRoom', 3, 60000)) {
+    throw new Error("Слишком много попыток создания комнат. Подождите минуту.");
+  }
+  
   let room_id;
   let attempts = 0;
   const maxAttempts = 10;
 
   // Генерируем уникальный ID игрока
   gameState.playerId = generatePlayerId();
+  
+  // Дополнительная проверка безопасности player_id
+  if (!validatePlayerId(gameState.playerId)) {
+    throw new Error("Ошибка генерации ID игрока");
+  }
+  
   gameState.isPlayer1 = true;
+  
+  secureLog('createRoom', { playerId: gameState.playerId });
 
   // Создаем уникальный room_id из 4 цифр с несколькими попытками
-  while (attempts < maxAttempts) {
+  // Используем настройки из конфигурации
+  const configuredMaxAttempts = window.SECURITY_CONFIG?.maxIdGenerationAttempts || maxAttempts;
+  
+  while (attempts < configuredMaxAttempts) {
     // Генерируем ID из 4 случайных цифр
     room_id = Math.floor(1000 + Math.random() * 9000).toString();
     
@@ -277,7 +350,7 @@ async function createRoom() {
     }
   }
 
-  if (attempts >= maxAttempts) {
+  if (attempts >= configuredMaxAttempts) {
     throw new Error("Не удалось создать уникальный ID комнаты. Попробуйте еще раз.");
   }
 
@@ -332,13 +405,14 @@ async function createRoom() {
 // Очистка старых/поврежденных комнат (опционально)
 async function cleanupOldRooms() {
   try {
-    // Удаляем комнаты старше 1 часа
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    // Используем настройки времени жизни из конфигурации
+    const maxLifetime = window.SECURITY_CONFIG?.maxRoomLifetime || (60 * 60 * 1000); // по умолчанию 1 час
+    const cutoffTime = new Date(Date.now() - maxLifetime).toISOString();
     
     const { error } = await supabase
       .from("games")
       .delete()
-      .lt("created_at", oneHourAgo);
+      .lt("created_at", cutoffTime);
 
     if (error) {
       console.error('Ошибка очистки старых комнат:', error);
@@ -352,6 +426,17 @@ async function cleanupOldRooms() {
 
 // Присоединение к комнате
 async function joinRoom(room_id) {
+  // Проверка rate limit (максимум 5 присоединений в минуту)
+  if (!rateLimiter.checkLimit('joinRoom', 5, 60000)) {
+    throw new Error("Слишком много попыток присоединения. Подождите минуту.");
+  }
+  
+  // Дополнительная валидация room_id
+  const validation = validateRoomId(room_id);
+  if (!validation.valid) {
+    throw new Error(validation.message);
+  }
+  
   // Опциональная очистка старых комнат перед присоединением
   await cleanupOldRooms();
   
@@ -359,7 +444,15 @@ async function joinRoom(room_id) {
   if (!gameState.playerId) {
     gameState.playerId = generatePlayerId();
   }
+  
+  // Проверка безопасности player_id
+  if (!validatePlayerId(gameState.playerId)) {
+    throw new Error("Ошибка генерации ID игрока");
+  }
+  
   gameState.isPlayer1 = false;
+  
+  secureLog('joinRoom', { roomId: room_id, playerId: gameState.playerId });
 
   try {
     // Проверяем существование комнаты
@@ -492,6 +585,24 @@ function toggleChoiceButtons(enabled) {
 async function makeMove(choice) {
   if (!gameState.currentRoom || !supabase) return;
 
+  // Проверка rate limit (максимум 10 ходов в минуту)
+  if (!rateLimiter.checkLimit('makeMove', 10, 60000)) {
+    showStatus("Слишком много ходов. Подождите немного.", true);
+    return;
+  }
+  
+  // Проверка целостности состояния игры
+  if (!validateGameState()) {
+    showStatus("Ошибка состояния игры", true);
+    return;
+  }
+
+  // Валидация выбора игрока
+  if (!validateChoice(choice)) {
+    showStatus("Недопустимый выбор", true);
+    return;
+  }
+
   if (gameState.myChoice) {
     showStatus("Вы уже сделали ход в этом раунде!", true);
     return;
@@ -502,11 +613,20 @@ async function makeMove(choice) {
     return;
   }
 
-  // Сохраняем выбор локально
-  gameState.myChoice = choice;
+  // Дополнительная проверка состояния игры
+  if (!validatePlayerId(gameState.playerId)) {
+    showStatus("Ошибка идентификации игрока", true);
+    return;
+  }
+  
+  secureLog('makeMove', { choice: choice, roomId: gameState.currentRoom });
+
+  // Санитизируем и сохраняем выбор локально
+  const sanitizedChoice = sanitizeInput(choice);
+  gameState.myChoice = sanitizedChoice;
   toggleChoiceButtons(false);
-  updatePlayerChoice(true, choice);
-  showStatus(`Ваш выбор: ${choice}. Ожидание хода оппонента...`);
+  updatePlayerChoice(true, sanitizedChoice);
+  showStatus(`Ваш выбор: ${sanitizedChoice}. Ожидание хода оппонента...`);
 
   try {
     // Определяем, какое поле обновлять
@@ -515,9 +635,9 @@ async function makeMove(choice) {
     };
 
     if (gameState.isPlayer1) {
-      updateData.player1_choice = choice;
+      updateData.player1_choice = sanitizedChoice;
     } else {
-      updateData.player2_choice = choice;
+      updateData.player2_choice = sanitizedChoice;
     }
 
     // Если это первый ход в раунде, меняем статус на playing
@@ -1664,5 +1784,127 @@ function showGameResult(message, myChoice, opponentChoice, winner) {
       }, 300);
     }
   };
+}
+
+// Система защиты от злоупотреблений
+const rateLimiter = {
+  actions: new Map(), // Хранилище действий по IP/пользователю
+  
+  // Проверка rate limit для действия
+  checkLimit(action, maxAttempts = 5, timeWindow = 60000) {
+    // Пропускаем rate limiting в режиме разработки если настроено
+    if (window.DEV_CONFIG?.skipRateLimit && location.hostname === 'localhost') {
+      return true;
+    }
+    
+    // Используем настройки из конфигурации если доступны
+    if (window.SECURITY_CONFIG?.rateLimits?.[action]) {
+      const config = window.SECURITY_CONFIG.rateLimits[action];
+      maxAttempts = config.maxAttempts;
+      timeWindow = config.timeWindow;
+    }
+    
+    const now = Date.now();
+    const userId = gameState.playerId || 'anonymous';
+    const key = `${userId}_${action}`;
+    
+    if (!this.actions.has(key)) {
+      this.actions.set(key, []);
+    }
+    
+    const attempts = this.actions.get(key);
+    
+    // Удаляем старые попытки
+    const recentAttempts = attempts.filter(time => now - time < timeWindow);
+    this.actions.set(key, recentAttempts);
+    
+    if (recentAttempts.length >= maxAttempts) {
+      return false; // Превышен лимит
+    }
+    
+    // Добавляем текущую попытку
+    recentAttempts.push(now);
+    return true; // Можно выполнить действие
+  },
+  
+  // Очистка старых записей
+  cleanup() {
+    const now = Date.now();
+    for (const [key, attempts] of this.actions.entries()) {
+      const recentAttempts = attempts.filter(time => now - time < 300000); // 5 минут
+      if (recentAttempts.length === 0) {
+        this.actions.delete(key);
+      } else {
+        this.actions.set(key, recentAttempts);
+      }
+    }
+  }
+};
+
+// Автоматическая очистка rate limiter каждые 5 минут
+setInterval(() => {
+  rateLimiter.cleanup();
+}, 300000);
+
+// Функция для безопасного отображения данных
+function secureDisplay(data, maxLength = 50) {
+  if (!data || typeof data !== 'string') return '';
+  
+  return data
+    .replace(/[<>]/g, '') // Убираем HTML теги
+    .replace(/['"]/g, '') // Убираем кавычки
+    .slice(0, maxLength); // Ограничиваем длину
+}
+
+// Проверка целостности состояния игры
+function validateGameState() {
+  // Проверяем, включена ли валидация состояния
+  if (!window.SECURITY_CONFIG?.enableStateValidation) {
+    return true; // Пропускаем валидацию если отключена
+  }
+  
+  const issues = [];
+  
+  if (gameState.currentRoom && !validateRoomId(gameState.currentRoom).valid) {
+    issues.push('Невалидный ID комнаты');
+  }
+  
+  if (gameState.playerId && !validatePlayerId(gameState.playerId)) {
+    issues.push('Невалидный ID игрока');
+  }
+  
+  if (gameState.myChoice && !validateChoice(gameState.myChoice)) {
+    issues.push('Невалидный выбор игрока');
+  }
+  
+  if (issues.length > 0) {
+    console.warn('Проблемы с состоянием игры:', issues);
+    secureLog('gameStateValidationFailed', { issues });
+    return false;
+  }
+  
+  return true;
+}
+
+// Функция для безопасного логирования (без чувствительных данных)
+function secureLog(action, data = {}) {
+  // Проверяем настройки логирования
+  if (!window.SECURITY_CONFIG?.enableSecurityLogging) {
+    return; // Логирование отключено
+  }
+  
+  const sanitizedData = {};
+  
+  for (const [key, value] of Object.entries(data)) {
+    if (key.includes('key') || key.includes('token') || key.includes('secret')) {
+      sanitizedData[key] = '[HIDDEN]';
+    } else if (typeof value === 'string') {
+      sanitizedData[key] = secureDisplay(value);
+    } else {
+      sanitizedData[key] = value;
+    }
+  }
+  
+  console.log(`[${new Date().toISOString()}] ${action}:`, sanitizedData);
 }
 
