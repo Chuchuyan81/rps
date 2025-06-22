@@ -163,12 +163,13 @@ async function handleAction() {
 
   const roomInput = document.getElementById("roomInput");
   const actionButton = document.getElementById("actionButton");
+  const buttonText = actionButton?.querySelector('.button-text');
   
-  if (!roomInput || !actionButton) return;
+  if (!roomInput || !actionButton || !buttonText) return;
 
   const room_id = roomInput.value.trim();
   // Сохраняем оригинальный текст кнопки ДО вызова showLoader
-  const originalButtonText = actionButton.textContent;
+  const originalButtonText = buttonText.textContent;
 
   showLoader(true);
   showStatus("");
@@ -267,13 +268,17 @@ async function createRoom() {
   const roomInput = document.getElementById("roomInput");
   if (roomInput) {
     roomInput.value = room_id;
+    roomInput.disabled = true;
     console.log(`Room ID ${room_id} inserted into input field`);
     // Обновляем кнопку после заполнения поля
     updateButton();
     console.log("Button updated after room creation");
   }
 
-  showGameUI();
+  // Переключаемся на секцию ожидания
+  showSection('waitingSection');
+  displayRoomCode(room_id);
+  
   showStatus(`Комната ${room_id} создана! Ожидание второго игрока...`);
   subscribeToUpdates();
 }
@@ -385,11 +390,11 @@ async function joinRoom(room_id) {
     gameState.currentRoom = room_id;
     gameState.gameStatus = 'ready';
 
-    showGameUI();
-    showStatus("Присоединились к комнате! Игра началась!");
+    // Переключаемся на игровую секцию
+    showSection('gameSection');
+    resetPlayerChoices();
     
-    // Активируем кнопки для игрока 2 сразу после присоединения
-    toggleChoiceButtons(true);
+    showStatus("Присоединились к комнате! Игра началась!");
     
     subscribeToUpdates();
 
@@ -401,19 +406,11 @@ async function joinRoom(room_id) {
 
 // Отображение кнопок выбора
 function showGameUI() {
-  const choices = document.getElementById("choices");
+  // Переключаемся на игровую секцию
+  showSection('gameSection');
+  
   const roomInput = document.getElementById("roomInput");
-  const actionButton = document.getElementById("actionButton");
-
-  if (choices) choices.style.display = "block";
   if (roomInput) roomInput.disabled = true;
-  if (actionButton) {
-    actionButton.style.display = "block";
-    actionButton.textContent = "Закончить игру";
-    // Убираем старый обработчик и добавляем новый
-    actionButton.onclick = null;
-    actionButton.onclick = () => fullCleanup();
-  }
 
   // Активируем кнопки если игра готова (особенно важно для игрока 2)
   if (gameState.gameStatus === 'ready') {
@@ -426,10 +423,11 @@ function showGameUI() {
 
 // Блокировка/разблокировка кнопок выбора
 function toggleChoiceButtons(enabled) {
-  const buttons = document.querySelectorAll(".choice-btn");
+  const buttons = document.querySelectorAll(".choice-card");
   buttons.forEach(button => {
     button.disabled = !enabled;
     button.style.opacity = enabled ? "1" : "0.5";
+    button.style.pointerEvents = enabled ? "auto" : "none";
   });
 }
 
@@ -450,6 +448,7 @@ async function makeMove(choice) {
   // Сохраняем выбор локально
   gameState.myChoice = choice;
   toggleChoiceButtons(false);
+  updatePlayerChoice(true, choice);
   showStatus(`Ваш выбор: ${choice}. Ожидание хода оппонента...`);
 
   try {
@@ -610,6 +609,9 @@ function handleGameUpdate(gameData) {
   if (status === 'ready' && player2_id) {
     if (gameState.gameStatus === 'waiting') {
       showStatus("Второй игрок присоединился! Сделайте ваш выбор:");
+      // Переключаемся на игровую секцию
+      showSection('gameSection');
+      resetPlayerChoices();
     }
     gameState.gameStatus = 'ready';
     // Активируем кнопки для обоих игроков когда игра готова
@@ -624,9 +626,11 @@ function handleGameUpdate(gameData) {
     // Обновляем локальное состояние
     if (myChoice && !gameState.myChoice) {
       gameState.myChoice = myChoice;
+      updatePlayerChoice(true, myChoice);
     }
     if (opponentChoice && !gameState.opponentChoice) {
       gameState.opponentChoice = opponentChoice;
+      updatePlayerChoice(false, opponentChoice);
       showStatus("Оппонент сделал ход. Ожидание результата...");
     }
 
@@ -695,22 +699,17 @@ async function fullCleanup() {
   gameState.gameStatus = 'idle';
 
   // Сброс UI
-  const choices = document.getElementById("choices");
   const roomInput = document.getElementById("roomInput");
-  const actionButton = document.getElementById("actionButton");
 
-  if (choices) choices.style.display = "none";
   if (roomInput) {
     roomInput.disabled = false;
     roomInput.value = "";
   }
-  if (actionButton) {
-    actionButton.style.display = "block";
-    actionButton.textContent = "Создать комнату";
-    // Восстанавливаем правильный обработчик
-    actionButton.onclick = null;
-    actionButton.onclick = handleAction;
-  }
+
+  // Возвращаемся к начальной секции
+  showSection('roomSection');
+  resetPlayerChoices();
+  updateButton();
 
   toggleChoiceButtons(false);
   showStatus("Игра завершена. Комната удалена из базы данных.");
@@ -801,12 +800,18 @@ function setupInstallButton() {
   
   // Проверяем, нужно ли показывать кнопку
   if (shouldShowInstallButton()) {
-    // Для iOS показываем сразу
+    installBtn.style.display = 'flex'; // Показываем кнопку
+    
+    // Для iOS показываем инструкции
     if (isIOSDevice() && !isPWAMode()) {
-      showIOSInstallInstructions();
+      installBtn.onclick = () => {
+        showIOSInstallModal();
+      };
     }
     
     // Для Android ждем событие beforeinstallprompt (уже обработано в HTML)
+  } else {
+    installBtn.style.display = 'none';
   }
 }
 
@@ -822,16 +827,7 @@ function isIOSDevice() {
   return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 }
 
-// Показ инструкций для iOS
-function showIOSInstallInstructions() {
-  const installBtn = document.getElementById('install-btn');
-  if (!installBtn) return;
-  
-  installBtn.style.display = 'block';
-  installBtn.onclick = () => {
-    showIOSInstallModal();
-  };
-}
+
 
 // Модальное окно для iOS
 function showIOSInstallModal() {
