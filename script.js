@@ -169,9 +169,11 @@ async function handleAction() {
       await createRoom();
     } else {
       console.log(`Attempting to join room: ${room_id}`);
+      // Валидация только при присоединении к комнате
       const validation = validateRoomId(room_id);
       if (!validation.valid) {
         showStatus(validation.message, true);
+        showLoader(false);
         return;
       }
       await joinRoom(validation.roomId);
