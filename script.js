@@ -127,10 +127,12 @@ function validateRoomId(roomId) {
 
 // Динамическое изменение кнопки
 function updateButton() {
-  const roomInput = document.getElementById("room");
+  const roomInput = document.getElementById("roomInput");
   const actionButton = document.getElementById("actionButton");
+  const buttonText = actionButton?.querySelector('.button-text');
+  const buttonIcon = actionButton?.querySelector('.button-icon');
 
-  if (!roomInput || !actionButton) return;
+  if (!roomInput || !actionButton || !buttonText) return;
 
   // Фильтруем только цифры
   roomInput.value = roomInput.value.replace(/[^0-9]/g, '');
@@ -138,10 +140,16 @@ function updateButton() {
   // Всегда показываем "Создать комнату" когда поле пустое
   // И "Присоединиться" когда поле заполнено
   if (roomInput.value.trim() === "") {
-    actionButton.textContent = "Создать комнату";
+    buttonText.textContent = "Создать комнату";
+    if (buttonIcon) {
+      buttonIcon.innerHTML = '<path d="M10 4V16M4 10H16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>';
+    }
     console.log("Button set to: Создать комнату");
   } else {
-    actionButton.textContent = "Присоединиться";
+    buttonText.textContent = "Присоединиться";
+    if (buttonIcon) {
+      buttonIcon.innerHTML = '<path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+    }
     console.log(`Button set to: Присоединиться (Room ID: ${roomInput.value})`);
   }
 }
@@ -153,7 +161,7 @@ async function handleAction() {
     return;
   }
 
-  const roomInput = document.getElementById("room");
+  const roomInput = document.getElementById("roomInput");
   const actionButton = document.getElementById("actionButton");
   
   if (!roomInput || !actionButton) return;
@@ -256,7 +264,7 @@ async function createRoom() {
   gameState.gameStatus = 'waiting';
 
   // Обновляем UI
-  const roomInput = document.getElementById("room");
+  const roomInput = document.getElementById("roomInput");
   if (roomInput) {
     roomInput.value = room_id;
     console.log(`Room ID ${room_id} inserted into input field`);
@@ -394,7 +402,7 @@ async function joinRoom(room_id) {
 // Отображение кнопок выбора
 function showGameUI() {
   const choices = document.getElementById("choices");
-  const roomInput = document.getElementById("room");
+  const roomInput = document.getElementById("roomInput");
   const actionButton = document.getElementById("actionButton");
 
   if (choices) choices.style.display = "block";
@@ -688,7 +696,7 @@ async function fullCleanup() {
 
   // Сброс UI
   const choices = document.getElementById("choices");
-  const roomInput = document.getElementById("room");
+  const roomInput = document.getElementById("roomInput");
   const actionButton = document.getElementById("actionButton");
 
   if (choices) choices.style.display = "none";
@@ -927,3 +935,337 @@ window.addEventListener('load', () => {
   console.log('- Режим отображения:', getPWADisplayMode());
   console.log('- iOS устройство:', isIOSDevice());
 });
+
+// === НОВЫЕ ФУНКЦИИ ДЛЯ ОБНОВЛЕННОГО UI ===
+
+// Очистка поля ввода
+function clearInput() {
+  const roomInput = document.getElementById("roomInput");
+  if (roomInput) {
+    roomInput.value = "";
+    roomInput.focus();
+    updateButton();
+  }
+}
+
+// Обновление статуса подключения
+function updateConnectionStatus(isOnline) {
+  const statusIndicator = document.getElementById('statusIndicator');
+  const statusText = document.getElementById('statusText');
+  
+  if (statusIndicator && statusText) {
+    if (isOnline) {
+      statusIndicator.className = 'status-indicator online';
+      statusText.textContent = 'Онлайн';
+    } else {
+      statusIndicator.className = 'status-indicator offline';
+      statusText.textContent = 'Офлайн';
+    }
+  }
+}
+
+// Управление прогресс-баром
+function updateProgressBar(step) {
+  const steps = document.querySelectorAll('.progress-step');
+  steps.forEach((stepEl, index) => {
+    stepEl.classList.remove('active');
+    if (index <= step) {
+      stepEl.classList.add('active');
+    }
+  });
+}
+
+// Переключение секций
+function showSection(sectionName) {
+  const sections = ['roomSection', 'waitingSection', 'gameSection'];
+  sections.forEach(section => {
+    const el = document.getElementById(section);
+    if (el) {
+      el.style.display = section === sectionName ? 'block' : 'none';
+    }
+  });
+  
+  // Обновляем прогресс-бар
+  const progressMap = {
+    'roomSection': 0,
+    'waitingSection': 1,
+    'gameSection': 2
+  };
+  updateProgressBar(progressMap[sectionName] || 0);
+}
+
+// Показ кода комнаты в секции ожидания
+function displayRoomCode(roomCode) {
+  const roomCodeDisplay = document.getElementById('roomCodeDisplay');
+  if (roomCodeDisplay) {
+    roomCodeDisplay.textContent = roomCode;
+  }
+}
+
+// Копирование кода комнаты
+function copyRoomCode() {
+  const roomCodeDisplay = document.getElementById('roomCodeDisplay');
+  if (roomCodeDisplay && roomCodeDisplay.textContent !== '----') {
+    navigator.clipboard.writeText(roomCodeDisplay.textContent).then(() => {
+      showToast('Код комнаты скопирован!', 'success');
+    }).catch(() => {
+      showToast('Не удалось скопировать код', 'error');
+    });
+  }
+}
+
+// Система уведомлений (Toast)
+function showToast(message, type = 'info', duration = 3000) {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  
+  const icons = {
+    success: '<path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+    error: '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+    warning: '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+    info: '<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 16V12M12 8H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'
+  };
+
+  toast.innerHTML = `
+    <svg class="toast-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+      ${icons[type] || icons.info}
+    </svg>
+    <span class="toast-message">${message}</span>
+    <button class="toast-close" onclick="this.parentElement.remove()">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+  `;
+
+  container.appendChild(toast);
+  
+  // Показываем toast
+  setTimeout(() => toast.classList.add('show'), 100);
+  
+  // Автоматически убираем toast
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
+// Модальные окна
+function showModal(modalId) {
+  const overlay = document.getElementById('modalOverlay');
+  const modal = document.getElementById(modalId);
+  
+  if (overlay && modal) {
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closeModal() {
+  const overlay = document.getElementById('modalOverlay');
+  if (overlay) {
+    overlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+}
+
+// Диалог случайной игры
+function showRandomRoomDialog() {
+  showModal('randomRoomModal');
+}
+
+function findRandomGame() {
+  closeModal();
+  showToast('Поиск случайной игры...', 'info');
+  // Здесь можно добавить логику поиска случайной игры
+}
+
+// Обновление статистики
+function updateStats(wins = 0, losses = 0, draws = 0) {
+  const winsEl = document.getElementById('winsCount');
+  const lossesEl = document.getElementById('lossesCount');
+  const drawsEl = document.getElementById('drawsCount');
+  
+  if (winsEl) winsEl.textContent = wins;
+  if (lossesEl) lossesEl.textContent = losses;
+  if (drawsEl) drawsEl.textContent = draws;
+}
+
+// Обновление выборов игроков
+function updatePlayerChoice(isMyChoice, choice) {
+  const targetId = isMyChoice ? 'myChoiceDisplay' : 'opponentChoiceDisplay';
+  const element = document.getElementById(targetId);
+  
+  if (element) {
+    const emojiMap = {
+      'камень': '🪨',
+      'ножницы': '✂️',
+      'бумага': '📄'
+    };
+    
+    element.innerHTML = `<div class="choice-result">${emojiMap[choice] || choice}</div>`;
+  }
+}
+
+// Сброс выборов игроков
+function resetPlayerChoices() {
+  const myChoice = document.getElementById('myChoiceDisplay');
+  const opponentChoice = document.getElementById('opponentChoiceDisplay');
+  
+  if (myChoice) {
+    myChoice.innerHTML = '<div class="choice-placeholder">?</div>';
+  }
+  if (opponentChoice) {
+    opponentChoice.innerHTML = '<div class="choice-placeholder">?</div>';
+  }
+}
+
+// Обновление таймера игры
+function startGameTimer(duration = 30) {
+  const timerText = document.querySelector('.timer-text');
+  const timerProgress = document.querySelector('.timer-progress');
+  
+  if (!timerText || !timerProgress) return;
+  
+  let timeLeft = duration;
+  const circumference = 113; // 2 * PI * 18 (радиус круга)
+  
+  const timer = setInterval(() => {
+    const progress = (timeLeft / duration) * circumference;
+    timerProgress.style.strokeDashoffset = circumference - progress;
+    timerText.textContent = timeLeft;
+    
+    if (timeLeft <= 0) {
+      clearInterval(timer);
+      // Автоматический выбор или действие при истечении времени
+      showToast('Время вышло!', 'warning');
+    }
+    
+    timeLeft--;
+  }, 1000);
+  
+  return timer;
+}
+
+// Анимация выбора
+function animateChoice(choice) {
+  const choiceCards = document.querySelectorAll('.choice-card');
+  choiceCards.forEach(card => {
+    card.classList.remove('selected');
+    if (card.dataset.choice === choice) {
+      card.classList.add('selected');
+    }
+  });
+}
+
+// Показ уведомления об обновлении
+function showUpdateToast() {
+  const toast = document.createElement('div');
+  toast.className = 'toast info';
+  toast.innerHTML = `
+    <svg class="toast-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2"/>
+      <path d="M8 12L11 15L16 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span class="toast-message">Доступно обновление приложения</span>
+    <button class="primary-button" onclick="updateApp()" style="margin-left: 12px; height: 32px; padding: 0 16px; font-size: 0.875rem;">
+      Обновить
+    </button>
+  `;
+  
+  const container = document.getElementById('toastContainer');
+  if (container) {
+    container.appendChild(toast);
+    setTimeout(() => toast.classList.add('show'), 100);
+  }
+}
+
+// Обновление приложения
+function updateApp() {
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+    window.location.reload();
+  }
+}
+
+// Модальное окно для iOS установки
+function showIOSInstallModal() {
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay active';
+  modal.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Установить приложение</h3>
+        <button class="modal-close" onclick="this.parentElement.parentElement.parentElement.remove()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <div style="font-size: 3rem; margin-bottom: 16px;">📱</div>
+          <p style="font-size: 1.125rem; font-weight: 600; margin-bottom: 16px;">Установите приложение на устройство</p>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 16px; font-size: 0.875rem; line-height: 1.6;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 24px; height: 24px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.75rem;">1</div>
+            <span>Нажмите кнопку "Поделиться" (📤) внизу экрана</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 24px; height: 24px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.75rem;">2</div>
+            <span>Выберите "На экран Домой" или "Add to Home Screen"</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 24px; height: 24px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.75rem;">3</div>
+            <span>Нажмите "Добавить"</span>
+          </div>
+        </div>
+        <div style="text-align: center; margin-top: 24px; padding: 16px; background: var(--surface-variant); border-radius: var(--border-radius-small);">
+          <span style="font-weight: 600; color: var(--success);">🎉 Приложение появится на рабочем столе!</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="primary-button" onclick="this.parentElement.parentElement.parentElement.remove()">
+          Понятно
+        </button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  document.body.style.overflow = 'hidden';
+  
+  // Закрытие по клику вне модального окна
+  modal.onclick = (e) => {
+    if (e.target === modal) {
+      modal.remove();
+      document.body.style.overflow = '';
+    }
+  };
+}
+
+// Инициализация нового UI при загрузке
+document.addEventListener('DOMContentLoaded', () => {
+  // Инициализируем начальное состояние
+  showSection('roomSection');
+  
+  // Добавляем обработчики для закрытия модальных окон по клику вне них
+  document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal-overlay')) {
+      closeModal();
+    }
+  });
+  
+  // Инициализируем статистику
+  updateStats();
+  
+  // Инициализируем статус подключения
+  updateConnectionStatus(navigator.onLine);
+  
+  console.log('🎨 Новый UI инициализирован');
+});
+
