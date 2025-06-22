@@ -93,8 +93,8 @@
             <button id="actionButton" onclick="handleAction()" class="primary-btn">
               <span class="btn-text">Создать комнату</span>
             </button>
-            <button class="secondary-btn" onclick="showRandomDialog()">
-              <span class="btn-text">Случайная игра</span>
+            <button class="secondary-btn" onclick="showAvailableRooms()">
+              <span class="btn-text">Доступные комнаты</span>
             </button>
           </div>
         </div>
@@ -185,18 +185,18 @@
         <!-- Статистика -->
         <div class="menu-section">
           <h4>Статистика</h4>
-          <div class="stats-row">
-            <div class="stat">
-              <div class="stat-value" id="winsCount">0</div>
-              <div class="stat-label">Побед</div>
+          <div class="stats-compact">
+            <div class="stat-item">
+              <span class="stat-number" id="winsCount">0</span>
+              <span class="stat-text">Побед</span>
             </div>
-            <div class="stat">
-              <div class="stat-value" id="lossesCount">0</div>
-              <div class="stat-label">Поражений</div>
+            <div class="stat-item">
+              <span class="stat-number" id="lossesCount">0</span>
+              <span class="stat-text">Поражений</span>
             </div>
-            <div class="stat">
-              <div class="stat-value" id="drawsCount">0</div>
-              <div class="stat-label">Ничьих</div>
+            <div class="stat-item">
+              <span class="stat-number" id="drawsCount">0</span>
+              <span class="stat-text">Ничьих</span>
             </div>
           </div>
         </div>
@@ -204,10 +204,10 @@
         <!-- Правила -->
         <div class="menu-section">
           <h4>Правила</h4>
-          <div class="rules">
-            <div class="rule">🪨 побеждает ✂️</div>
-            <div class="rule">✂️ побеждает 📄</div>
-            <div class="rule">📄 побеждает 🪨</div>
+          <div class="rules-compact">
+            <div class="rule-item">🪨 > ✂️</div>
+            <div class="rule-item">✂️ > 📄</div>
+            <div class="rule-item">📄 > 🪨</div>
           </div>
         </div>
 
@@ -319,6 +319,11 @@
           };
         }
         // Для Android кнопка будет переопределена в beforeinstallprompt
+      } else {
+        // Для Android показываем кнопку и ждем prompt
+        installBtn.onclick = () => {
+          showToast("Ожидание возможности установки...", 'info');
+        };
       }
     }
     
@@ -402,9 +407,10 @@
             } else {
               console.log('❌ Пользователь отклонил установку');
             }
-          } catch (error) {
-            console.error('Ошибка при установке:', error);
-          }
+                      } catch (error) {
+              console.error('Ошибка при установке:', error);
+              alert('Ошибка при установке приложения');
+            }
           deferredPrompt = null;
         };
       }

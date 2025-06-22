@@ -85,6 +85,51 @@ async function testConnection() {
   }
 }
 
+// Показать уведомление (toast)
+function showToast(message, type = 'info', duration = 3000) {
+  const container = document.getElementById('toastContainer') || createToastContainer();
+  
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  
+  // Иконки для разных типов
+  const icons = {
+    success: '✅',
+    error: '❌',
+    warning: '⚠️',
+    info: 'ℹ️'
+  };
+  
+  toast.innerHTML = `
+    <span class="toast-icon">${icons[type] || icons.info}</span>
+    <span class="toast-message">${message}</span>
+  `;
+  
+  container.appendChild(toast);
+  
+  // Показываем toast
+  setTimeout(() => toast.classList.add('show'), 100);
+  
+  // Автоматически убираем toast
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    }, 300);
+  }, duration);
+}
+
+// Создать контейнер для toast уведомлений
+function createToastContainer() {
+  const container = document.createElement('div');
+  container.id = 'toastContainer';
+  container.className = 'toast-container';
+  document.body.appendChild(container);
+  return container;
+}
+
 // Показать статус игры
 function showStatus(message, isError = false) {
   const statusEl = document.getElementById("statusMessage");
@@ -990,165 +1035,397 @@ function toggleMenu() {
 
 // Показать случайную игру
 function showRandomDialog() {
-  showToast('Поиск случайной игры...', 'info');
-  // Здесь можно добавить логику поиска случайной игры
+  showToast("Функция в разработке", 'info');
 }
 
-// Обновление статуса подключения
-function updateConnectionStatus(isOnline) {
-  const connectionDot = document.getElementById('connectionDot');
-  
-  if (connectionDot) {
-    if (isOnline) {
-      connectionDot.classList.remove('offline');
-    } else {
-      connectionDot.classList.add('offline');
+// Показать доступные комнаты
+async function showAvailableRooms() {
+  if (!supabase) {
+    showStatus("Supabase не инициализирован", true);
+    return;
+  }
+
+  showLoader(true);
+  showStatus("Поиск доступных комнат...");
+
+  try {
+    // Получаем все комнаты, которые ожидают второго игрока
+    const { data: availableRooms, error } = await supabase
+      .from('games')
+      .select('room_id, created_at')
+      .eq('status', 'waiting')
+      .is('player2_id', null)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (error) {
+      console.error('Ошибка получения доступных комнат:', error);
+      showStatus("Ошибка получения списка комнат", true);
+      return;
     }
-  }
-}
 
-// Управление прогресс-баром
-function updateProgressBar(step) {
-  const steps = document.querySelectorAll('.progress-step');
-  steps.forEach((stepEl, index) => {
-    stepEl.classList.remove('active');
-    if (index <= step) {
-      stepEl.classList.add('active');
+    if (!availableRooms || availableRooms.length === 0) {
+      showToast("Нет доступных комнат. Создайте новую!", 'info');
+      showStatus("Нет доступных комнат");
+      return;
     }
-  });
-}
 
-// Показать состояние игры
-function showGameState(stateName) {
-  // Скрываем все состояния
-  const states = ['roomState', 'waitingState', 'playingState'];
-  states.forEach(state => {
-    const element = document.getElementById(state);
-    if (element) {
-      element.style.display = 'none';
-    }
-  });
-  
-  // Показываем нужное состояние
-  const targetState = document.getElementById(stateName);
-  if (targetState) {
-    targetState.style.display = 'block';
-  }
-  
-  // Обновляем статус подключения
-  updateConnectionStatus(true);
-}
+    // Создаем модальное окно со списком комнат
+    showAvailableRoomsModal(availableRooms);
 
-// Переключение секций (для обратной совместимости)
-function showSection(sectionName) {
-  const stateMap = {
-    'roomSection': 'roomState',
-    'waitingSection': 'waitingState', 
-    'gameSection': 'playingState'
-  };
-  
-  const stateName = stateMap[sectionName] || sectionName;
-  showGameState(stateName);
-}
-
-// Показ кода комнаты в секции ожидания
-function displayRoomCode(roomCode) {
-  const roomCodeBig = document.getElementById('roomCodeBig');
-  if (roomCodeBig) {
-    roomCodeBig.textContent = roomCode;
+  } catch (error) {
+    console.error('Ошибка при поиске комнат:', error);
+    showStatus("Произошла ошибка при поиске комнат", true);
+  } finally {
+    showLoader(false);
   }
 }
 
-// Копирование кода комнаты
-function copyRoomCode() {
-  const roomCodeBig = document.getElementById('roomCodeBig');
-  if (roomCodeBig && roomCodeBig.textContent !== '----') {
-    navigator.clipboard.writeText(roomCodeBig.textContent).then(() => {
-      showToast('Код комнаты скопирован!', 'success');
-    }).catch(() => {
-      showToast('Не удалось скопировать код', 'error');
-    });
+// Показать модальное окно с доступными комнатами
+function showAvailableRoomsModal(rooms) {
+  // Удаляем существующее модальное окно если есть
+  const existingModal = document.getElementById('availableRoomsModal');
+  if (existingModal) {
+    existingModal.remove();
   }
-}
 
-// Система уведомлений (Toast)
-function showToast(message, type = 'info', duration = 3000) {
-  const container = document.getElementById('toastContainer');
-  if (!container) return;
-
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  
-  const icons = {
-    success: '<path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
-    error: '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
-    warning: '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
-    info: '<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 16V12M12 8H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'
-  };
-
-  toast.innerHTML = `
-    <svg class="toast-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
-      ${icons[type] || icons.info}
-    </svg>
-    <span class="toast-message">${message}</span>
-    <button class="toast-close" onclick="this.parentElement.remove()">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-    </button>
+  const modal = document.createElement('div');
+  modal.id = 'availableRoomsModal';
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+    box-sizing: border-box;
   `;
 
-  container.appendChild(toast);
-  
-  // Показываем toast
-  setTimeout(() => toast.classList.add('show'), 100);
-  
-  // Автоматически убираем toast
-  setTimeout(() => {
-    toast.classList.remove('show');
-    setTimeout(() => toast.remove(), 300);
-  }, duration);
+  const roomsList = rooms.map(room => {
+    const timeAgo = getTimeAgo(room.created_at);
+    return `
+      <div class="room-item" onclick="joinRoomFromList('${room.room_id}')" style="
+        background: rgba(255, 255, 255, 0.1);
+        padding: 12px 16px;
+        border-radius: 12px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      " onmouseover="this.style.background='rgba(255, 255, 255, 0.2)'" 
+         onmouseout="this.style.background='rgba(255, 255, 255, 0.1)'">
+        <div>
+          <div style="font-weight: 600; font-size: 18px; color: #6366f1;">Комната ${room.room_id}</div>
+          <div style="font-size: 12px; color: #94a3b8;">Создана ${timeAgo}</div>
+        </div>
+        <div style="color: #10b981; font-size: 12px;">Присоединиться →</div>
+      </div>
+    `;
+  }).join('');
+
+  modal.innerHTML = `
+    <div style="
+      background: #1e293b;
+      border-radius: 20px;
+      padding: 24px;
+      max-width: 400px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    ">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="margin: 0; color: #f8fafc; font-size: 20px;">Доступные комнаты</h3>
+        <button onclick="this.closest('#availableRoomsModal').remove()" style="
+          background: rgba(255,255,255,0.1);
+          border: none;
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          color: #f8fafc;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        ">✕</button>
+      </div>
+      <div style="color: #cbd5e1; margin-bottom: 16px; font-size: 14px;">
+        Найдено комнат: ${rooms.length}
+      </div>
+      <div class="rooms-list">
+        ${roomsList}
+      </div>
+      <div style="margin-top: 16px; text-align: center;">
+        <button onclick="this.closest('#availableRoomsModal').remove()" style="
+          background: rgba(255,255,255,0.1);
+          border: none;
+          padding: 10px 20px;
+          border-radius: 12px;
+          color: #cbd5e1;
+          cursor: pointer;
+          font-size: 14px;
+        ">Закрыть</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // Закрытие по клику вне модального окна
+  modal.onclick = (e) => {
+    if (e.target === modal) {
+      modal.remove();
+    }
+  };
 }
 
-// Модальные окна
-function showModal(modalId) {
-  const overlay = document.getElementById('modalOverlay');
-  const modal = document.getElementById(modalId);
+// Присоединиться к комнате из списка
+async function joinRoomFromList(roomId) {
+  // Закрываем модальное окно
+  const modal = document.getElementById('availableRoomsModal');
+  if (modal) {
+    modal.remove();
+  }
+
+  // Заполняем поле ввода и присоединяемся
+  const roomInput = document.getElementById("roomInput");
+  if (roomInput) {
+    roomInput.value = roomId;
+    updateButton();
+  }
+
+  await joinRoom(roomId);
+}
+
+// Получить время "назад" для отображения
+function getTimeAgo(dateString) {
+  const now = new Date();
+  const created = new Date(dateString);
+  const diffMs = now - created;
+  const diffMins = Math.floor(diffMs / 60000);
   
-  if (overlay && modal) {
-    overlay.classList.add('active');
-    document.body.style.overflow = 'hidden';
+  if (diffMins < 1) return 'только что';
+  if (diffMins < 60) return `${diffMins} мин назад`;
+  
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours} ч назад`;
+  
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays} дн назад`;
+}
+
+// Показать доступные комнаты
+async function showAvailableRooms() {
+  if (!supabase) {
+    showStatus("Supabase не инициализирован", true);
+    return;
+  }
+
+  showLoader(true);
+  showStatus("Поиск доступных комнат...");
+
+  try {
+    // Получаем все комнаты, которые ожидают второго игрока
+    const { data: availableRooms, error } = await supabase
+      .from('games')
+      .select('room_id, created_at')
+      .eq('status', 'waiting')
+      .is('player2_id', null)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (error) {
+      console.error('Ошибка получения доступных комнат:', error);
+      showStatus("Ошибка получения списка комнат", true);
+      return;
+    }
+
+    if (!availableRooms || availableRooms.length === 0) {
+      showToast("Нет доступных комнат. Создайте новую!", 'info');
+      showStatus("Нет доступных комнат");
+      return;
+    }
+
+    // Создаем модальное окно со списком комнат
+    showAvailableRoomsModal(availableRooms);
+
+  } catch (error) {
+    console.error('Ошибка при поиске комнат:', error);
+    showStatus("Произошла ошибка при поиске комнат", true);
+  } finally {
+    showLoader(false);
   }
 }
 
-function closeModal() {
-  const overlay = document.getElementById('modalOverlay');
-  if (overlay) {
-    overlay.classList.remove('active');
-    document.body.style.overflow = '';
+// Показать модальное окно с доступными комнатами
+function showAvailableRoomsModal(rooms) {
+  // Удаляем существующее модальное окно если есть
+  const existingModal = document.getElementById('availableRoomsModal');
+  if (existingModal) {
+    existingModal.remove();
   }
+
+  const modal = document.createElement('div');
+  modal.id = 'availableRoomsModal';
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+    box-sizing: border-box;
+  `;
+
+  const roomsList = rooms.map(room => {
+    const timeAgo = getTimeAgo(room.created_at);
+    return `
+      <div class="room-item" onclick="joinRoomFromList('${room.room_id}')" style="
+        background: rgba(255, 255, 255, 0.1);
+        padding: 12px 16px;
+        border-radius: 12px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      " onmouseover="this.style.background='rgba(255, 255, 255, 0.2)'" 
+         onmouseout="this.style.background='rgba(255, 255, 255, 0.1)'">
+        <div>
+          <div style="font-weight: 600; font-size: 18px; color: #6366f1;">Комната ${room.room_id}</div>
+          <div style="font-size: 12px; color: #94a3b8;">Создана ${timeAgo}</div>
+        </div>
+        <div style="color: #10b981; font-size: 12px;">Присоединиться →</div>
+      </div>
+    `;
+  }).join('');
+
+  modal.innerHTML = `
+    <div style="
+      background: #1e293b;
+      border-radius: 20px;
+      padding: 24px;
+      max-width: 400px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    ">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="margin: 0; color: #f8fafc; font-size: 20px;">Доступные комнаты</h3>
+        <button onclick="this.closest('#availableRoomsModal').remove()" style="
+          background: rgba(255,255,255,0.1);
+          border: none;
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          color: #f8fafc;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        ">✕</button>
+      </div>
+      <div style="color: #cbd5e1; margin-bottom: 16px; font-size: 14px;">
+        Найдено комнат: ${rooms.length}
+      </div>
+      <div class="rooms-list">
+        ${roomsList}
+      </div>
+      <div style="margin-top: 16px; text-align: center;">
+        <button onclick="this.closest('#availableRoomsModal').remove()" style="
+          background: rgba(255,255,255,0.1);
+          border: none;
+          padding: 10px 20px;
+          border-radius: 12px;
+          color: #cbd5e1;
+          cursor: pointer;
+          font-size: 14px;
+        ">Закрыть</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // Закрытие по клику вне модального окна
+  modal.onclick = (e) => {
+    if (e.target === modal) {
+      modal.remove();
+    }
+  };
 }
 
-// Диалог случайной игры
-function showRandomRoomDialog() {
-  showModal('randomRoomModal');
+// Присоединиться к комнате из списка
+async function joinRoomFromList(roomId) {
+  // Закрываем модальное окно
+  const modal = document.getElementById('availableRoomsModal');
+  if (modal) {
+    modal.remove();
+  }
+
+  // Заполняем поле ввода и присоединяемся
+  const roomInput = document.getElementById("roomInput");
+  if (roomInput) {
+    roomInput.value = roomId;
+    updateButton();
+  }
+
+  await joinRoom(roomId);
 }
 
-function findRandomGame() {
-  closeModal();
-  showToast('Поиск случайной игры...', 'info');
-  // Здесь можно добавить логику поиска случайной игры
+// Получить время "назад" для отображения
+function getTimeAgo(dateString) {
+  const now = new Date();
+  const created = new Date(dateString);
+  const diffMs = now - created;
+  const diffMins = Math.floor(diffMs / 60000);
+  
+  if (diffMins < 1) return 'только что';
+  if (diffMins < 60) return `${diffMins} мин назад`;
+  
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours} ч назад`;
+  
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays} дн назад`;
 }
 
 // Обновление статистики
 function updateStats(wins = 0, losses = 0, draws = 0) {
+  // Обновляем статистику в localStorage если переданы параметры
+  if (arguments.length > 0) {
+    localStorage.setItem('rps_wins', wins.toString());
+    localStorage.setItem('rps_losses', losses.toString());
+    localStorage.setItem('rps_draws', draws.toString());
+  }
+  
+  // Получаем текущую статистику из localStorage
+  const currentWins = parseInt(localStorage.getItem('rps_wins') || '0');
+  const currentLosses = parseInt(localStorage.getItem('rps_losses') || '0');
+  const currentDraws = parseInt(localStorage.getItem('rps_draws') || '0');
+  
+  // Обновляем отображение
   const winsEl = document.getElementById('winsCount');
   const lossesEl = document.getElementById('lossesCount');
   const drawsEl = document.getElementById('drawsCount');
   
-  if (winsEl) winsEl.textContent = wins;
-  if (lossesEl) lossesEl.textContent = losses;
-  if (drawsEl) drawsEl.textContent = draws;
+  if (winsEl) winsEl.textContent = currentWins;
+  if (lossesEl) lossesEl.textContent = currentLosses;
+  if (drawsEl) drawsEl.textContent = currentDraws;
 }
 
 // Обновление выборов игроков
@@ -1322,7 +1599,7 @@ function showIOSInstallModal() {
 // Инициализация нового UI при загрузке
 document.addEventListener('DOMContentLoaded', () => {
   // Инициализируем начальное состояние
-  showSection('roomSection');
+  showGameState('roomState');
   
   // Добавляем обработчики для закрытия модальных окон по клику вне них
   document.addEventListener('click', (e) => {
@@ -1331,7 +1608,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   
-  // Инициализируем статистику
+  // Инициализируем статистику (без параметров - загружаем из localStorage)
   updateStats();
   
   // Инициализируем статус подключения
