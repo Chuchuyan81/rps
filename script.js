@@ -36,11 +36,13 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Делаем клиент доступным глобально для отладки
-    window.supabaseClient = supabase;
+    // Делаем клиент доступным глобально только в режиме разработки
+    if (window.DEV_CONFIG?.enableDebug && location.hostname === 'localhost') {
+      window.supabaseClient = supabase;
+      console.log('🔧 [DEV] Supabase client доступен в window.supabaseClient');
+    }
     
-    console.log('Supabase client initialized:', supabase);
-    console.log('Глобальная переменная window.supabaseClient доступна для тестирования');
+    console.log('✅ Подключение к базе данных установлено');
     showStatus("Готов к игре! Создайте комнату или присоединитесь к существующей.");
     
     // Загружаем статистику сессии при инициализации
@@ -50,8 +52,8 @@ window.addEventListener('DOMContentLoaded', () => {
     testConnection();
     
   } catch (error) {
-    console.error('Error initializing Supabase:', error);
-    showStatus("Ошибка инициализации Supabase: " + error.message, true);
+    console.error('❌ Ошибка инициализации');
+    showStatus("Ошибка инициализации", true);
   }
 });
 
@@ -88,13 +90,13 @@ async function testConnection() {
       .limit(1);
     
     if (error) {
-      console.error('Connection test failed:', error);
-      showStatus(`Ошибка подключения к базе данных: ${error.message}`, true);
+      console.error('❌ Ошибка подключения к базе данных');
+      showStatus(`Ошибка подключения к базе данных`, true);
     } else {
-      console.log('Connection test successful');
+      console.log('✅ Соединение с базой данных проверено');
     }
   } catch (error) {
-    console.error('Connection test error:', error);
+    console.error('❌ Ошибка сети');
     showStatus("Ошибка сети. Проверьте подключение к интернету.", true);
   }
 }
@@ -291,7 +293,7 @@ async function handleAction() {
       console.log("Creating new room...");
       await createRoom();
     } else {
-      console.log(`Attempting to join room: ${room_id}`);
+      console.log('🔄 Попытка присоединения к комнате');
       // Валидация только при присоединении к комнате
       const validation = validateRoomId(room_id);
       if (!validation.valid) {
@@ -386,7 +388,7 @@ async function createRoom() {
     throw new Error(`Ошибка создания комнаты: ${error.message}`);
   }
 
-  console.log('Room created successfully:', data);
+      console.log('✅ Комната создана успешно');
 
   // Обновляем состояние
   gameState.currentRoom = room_id;
@@ -397,7 +399,7 @@ async function createRoom() {
   if (roomInput) {
     roomInput.value = room_id;
     roomInput.disabled = true;
-    console.log(`Room ID ${room_id} inserted into input field`);
+    console.log('✅ ID комнаты добавлен в поле ввода');
     // Обновляем кнопку после заполнения поля
     updateButton();
     console.log("Button updated after room creation");
@@ -482,10 +484,7 @@ async function joinRoom(room_id) {
       throw new Error("Комната не найдена!");
     }
 
-    console.log('Найдена комната для присоединения:', existingGame);
-    console.log('Текущий playerId:', gameState.playerId);
-    console.log('Player1 ID в комнате:', existingGame.player1_id);
-    console.log('Player2 ID в комнате:', existingGame.player2_id);
+    console.log('✅ Комната найдена для присоединения');
 
     // Проверяем, что игрок не пытается присоединиться к своей же комнате
     // НО: пропускаем эту проверку, так как у разных сессий разные playerId
@@ -495,12 +494,12 @@ async function joinRoom(room_id) {
 
     // Проверяем заполненность комнаты
     if (existingGame.player2_id && existingGame.player2_id.trim() !== '') {
-      console.log('Комната уже заполнена. player2_id:', existingGame.player2_id);
+      console.log('⚠️ Комната уже заполнена');
       throw new Error("Комната уже заполнена!");
     }
 
     if (existingGame.status !== 'waiting_player2') {
-      console.log('Статус комнаты не подходит для присоединения:', existingGame.status);
+      console.log('⚠️ Статус комнаты не подходит для присоединения');
       throw new Error("Комната недоступна для присоединения!");
     }
 
@@ -532,7 +531,7 @@ async function joinRoom(room_id) {
       throw new Error("Не удалось присоединиться к комнате. Возможно, она уже заполнена.");
     }
 
-    console.log('Успешно присоединились к комнате:', updatedGame);
+    console.log('✅ Успешно присоединились к комнате');
 
     // Обновляем состояние
     gameState.currentRoom = room_id;
@@ -764,7 +763,7 @@ function subscribeToUpdates() {
   // Закрываем предыдущие подключения
   cleanup();
 
-  console.log('Subscribing to updates for room:', gameState.currentRoom);
+  console.log('📡 Подписка на обновления комнаты');
 
   gameState.channel = supabase
     .channel(`game-room-${gameState.currentRoom}`)
@@ -777,7 +776,7 @@ function subscribeToUpdates() {
         filter: `room_id=eq.${gameState.currentRoom}`
       },
       (payload) => {
-        console.log('Received update:', payload);
+        console.log('📥 Получено обновление игры');
         handleGameUpdate(payload.new);
       }
     )
@@ -798,7 +797,7 @@ function subscribeToUpdates() {
       'broadcast',
       { event: 'session_stats' },
       (payload) => {
-        console.log('Received stats update:', payload);
+        console.log('📊 Получено обновление статистики');
         handleStatsUpdate(payload.payload);
       }
     )
@@ -816,7 +815,7 @@ function subscribeToUpdates() {
 async function handleGameUpdate(gameData) {
   const { player1_choice, player2_choice, status, player2_id } = gameData;
 
-  console.log('Handling game update:', gameData);
+  console.log('🎮 Обработка обновления игры');
 
   // Обновляем статус подключения игроков
   if (status === 'ready' && player2_id) {
@@ -917,7 +916,7 @@ async function deleteRoomFromDB() {
     if (error) {
       console.error('Error deleting room:', error);
     } else {
-      console.log(`Room ${gameState.currentRoom} deleted from database`);
+      console.log('🗑️ Комната удалена из базы данных');
     }
   } catch (error) {
     console.error('Exception deleting room:', error);
@@ -1187,11 +1186,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Дополнительная проверка при загрузке страницы
 window.addEventListener('load', () => {
-  console.log('📋 PWA статус при загрузке:');
-  console.log('- Мобильное устройство:', isMobileDevice());
-  console.log('- PWA режим:', isPWAMode());
-  console.log('- Режим отображения:', getPWADisplayMode());
-  console.log('- iOS устройство:', isIOSDevice());
+      console.log('📋 PWA статус проверен');
 });
 
 // === НОВЫЕ ФУНКЦИИ ДЛЯ ОБНОВЛЕННОГО UI ===
@@ -1226,7 +1221,7 @@ function toggleMenu() {
 
 // Показать определенное состояние игры
 function showGameState(stateName) {
-  console.log(`Переключение на состояние: ${stateName}`);
+  debugLog('Переключение состояния', { stateName });
   
   // Скрываем все состояния
   const allStates = document.querySelectorAll('.game-state');
@@ -1238,9 +1233,9 @@ function showGameState(stateName) {
   const targetState = document.getElementById(stateName);
   if (targetState) {
     targetState.style.display = 'block';
-    console.log(`Состояние ${stateName} активировано`);
+    debugLog('Состояние активировано', { stateName });
   } else {
-    console.error(`Состояние ${stateName} не найдено`);
+    console.error('❌ Состояние не найдено');
   }
 }
 
@@ -1497,7 +1492,7 @@ function incrementStats(wins = 0, losses = 0, draws = 0) {
   // Обновляем отображение
   updateStatsDisplay();
   
-  console.log(`📊 Статистика обновлена: Побед: ${newWins}, Поражений: ${newLosses}, Ничьих: ${newDraws}`);
+  console.log('📊 Статистика обновлена');
 }
 
 // Установка статистики (устанавливает абсолютные значения)
@@ -1553,7 +1548,7 @@ async function syncSessionStats() {
     
     // Обновляем отображение статистики
     updateSessionStatsDisplay();
-    console.log('📊 Статистика синхронизирована:', gameState.sessionStats);
+    console.log('📊 Статистика синхронизирована');
     
   } catch (error) {
     console.error('Ошибка при синхронизации статистики:', error);
@@ -1576,7 +1571,7 @@ function handleStatsUpdate(statsMessage) {
   if (statsMessage.stats) {
     gameState.sessionStats = { ...statsMessage.stats };
     updateSessionStatsDisplay();
-    console.log('📊 Получена обновленная статистика от оппонента:', gameState.sessionStats);
+    console.log('📊 Получена обновленная статистика от оппонента');
   }
 }
 
@@ -2091,12 +2086,24 @@ function validateGameState() {
   }
   
   if (issues.length > 0) {
-    console.warn('Проблемы с состоянием игры:', issues);
+    console.warn('⚠️ Обнаружены проблемы с состоянием игры');
     secureLog('gameStateValidationFailed', { issues });
     return false;
   }
   
   return true;
+}
+
+// Безопасное логирование для отладки
+function debugLog(message, data = null) {
+  // Логируем только в режиме разработки
+  const isDev = window.DEV_CONFIG?.enableDebug && location.hostname === 'localhost';
+  
+  if (isDev && data) {
+    console.log(`🔧 [DEBUG] ${message}:`, data);
+  } else {
+    console.log(`ℹ️ ${message}`);
+  }
 }
 
 // Функция для безопасного логирования (без чувствительных данных)
@@ -2118,6 +2125,6 @@ function secureLog(action, data = {}) {
     }
   }
   
-  console.log(`[${new Date().toISOString()}] ${action}:`, sanitizedData);
+  console.log(`[${new Date().toISOString()}] ${action}`);
 }
 
