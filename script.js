@@ -43,8 +43,8 @@ window.addEventListener('DOMContentLoaded', () => {
     console.log('Глобальная переменная window.supabaseClient доступна для тестирования');
     showStatus("Готов к игре! Создайте комнату или присоединитесь к существующей.");
     
-    // Загружаем статистику при инициализации
-    updateStatsDisplay();
+    // Загружаем статистику сессии при инициализации
+    updateSessionStatsDisplay();
     
     // Тестируем подключение
     testConnection();
@@ -63,7 +63,13 @@ let gameState = {
   channel: null,
   myChoice: null,
   opponentChoice: null,
-  gameStatus: 'idle' // idle, waiting, playing, finished
+  gameStatus: 'idle', // idle, waiting, playing, finished
+  // Статистика текущей игровой сессии (общая для обоих игроков)
+  sessionStats: {
+    player1Wins: 0,
+    player2Wins: 0,
+    draws: 0
+  }
 };
 
 // Генерация уникального ID игрока
@@ -788,6 +794,14 @@ function subscribeToUpdates() {
         cleanup();
       }
     )
+    .on(
+      'broadcast',
+      { event: 'session_stats' },
+      (payload) => {
+        console.log('Received stats update:', payload);
+        handleStatsUpdate(payload.payload);
+      }
+    )
     .subscribe((status) => {
       console.log('Subscription status:', status);
       if (status === 'SUBSCRIBED') {
@@ -799,7 +813,7 @@ function subscribeToUpdates() {
 }
 
 // Обработка обновлений игры
-function handleGameUpdate(gameData) {
+async function handleGameUpdate(gameData) {
   const { player1_choice, player2_choice, status, player2_id } = gameData;
 
   console.log('Handling game update:', gameData);
@@ -849,18 +863,28 @@ function handleGameUpdate(gameData) {
       // Показываем выбор оппонента только сейчас
       updatePlayerChoice(false, opponentChoiceDisplay);
       
-      // Обновляем статистику в зависимости от результата
-      let wins = 0, losses = 0, draws = 0;
+      // Обновляем статистику сессии в зависимости от результата
       if (result.winner === 'me') {
-        wins = 1;
+        // Я победил
+        if (gameState.isPlayer1) {
+          gameState.sessionStats.player1Wins++;
+        } else {
+          gameState.sessionStats.player2Wins++;
+        }
       } else if (result.winner === 'opponent') {
-        losses = 1;
+        // Оппонент победил
+        if (gameState.isPlayer1) {
+          gameState.sessionStats.player2Wins++;
+        } else {
+          gameState.sessionStats.player1Wins++;
+        }
       } else if (result.winner === 'draw') {
-        draws = 1;
+        // Ничья
+        gameState.sessionStats.draws++;
       }
       
-      // Инкрементируем статистику
-      incrementStats(wins, losses, draws);
+      // Синхронизируем статистику между игроками через Supabase
+      await syncSessionStats();
       
       // Показываем большое модальное окно с результатом
       showGameResult(result.message, myChoiceDisplay, opponentChoiceDisplay, result.winner);
@@ -921,6 +945,13 @@ async function fullCleanup() {
   gameState.myChoice = null;
   gameState.opponentChoice = null;
   gameState.gameStatus = 'idle';
+  
+  // Сброс статистики сессии
+  gameState.sessionStats = {
+    player1Wins: 0,
+    player2Wins: 0,
+    draws: 0
+  };
 
   // Сброс UI
   const roomInput = document.getElementById("roomInput");
@@ -940,6 +971,9 @@ async function fullCleanup() {
   showGameState('roomState');
   resetPlayerChoices();
   updateButton();
+  
+  // Обновляем отображение статистики (покажет нули)
+  updateSessionStatsDisplay();
 
   toggleChoiceButtons(false);
   showStatus("Игра завершена. Комната удалена из базы данных.");
@@ -1496,17 +1530,91 @@ function updateStatsDisplay() {
   if (drawsEl) drawsEl.textContent = currentDraws;
 }
 
-// Сброс статистики
+// Синхронизация статистики сессии между игроками через WebSocket
+async function syncSessionStats() {
+  if (!gameState.currentRoom || !gameState.channel) return;
+  
+  try {
+    // Отправляем статистику через WebSocket событие
+    const statsMessage = {
+      type: 'session_stats',
+      room_id: gameState.currentRoom,
+      player_id: gameState.playerId,
+      stats: gameState.sessionStats,
+      timestamp: Date.now()
+    };
+    
+    // Отправляем через Supabase Realtime
+    await gameState.channel.send({
+      type: 'broadcast',
+      event: 'session_stats',
+      payload: statsMessage
+    });
+    
+    // Обновляем отображение статистики
+    updateSessionStatsDisplay();
+    console.log('📊 Статистика синхронизирована:', gameState.sessionStats);
+    
+  } catch (error) {
+    console.error('Ошибка при синхронизации статистики:', error);
+  }
+}
+
+// Обработка обновлений статистики от другого игрока
+function handleStatsUpdate(statsMessage) {
+  // Проверяем, что это не наше собственное сообщение
+  if (statsMessage.player_id === gameState.playerId) {
+    return; // Игнорируем свои собственные сообщения
+  }
+  
+  // Проверяем, что это сообщение для нашей комнаты
+  if (statsMessage.room_id !== gameState.currentRoom) {
+    return;
+  }
+  
+  // Обновляем статистику из сообщения
+  if (statsMessage.stats) {
+    gameState.sessionStats = { ...statsMessage.stats };
+    updateSessionStatsDisplay();
+    console.log('📊 Получена обновленная статистика от оппонента:', gameState.sessionStats);
+  }
+}
+
+// Обновление отображения статистики сессии
+function updateSessionStatsDisplay() {
+  const winsEl = document.getElementById('winsCount');
+  const lossesEl = document.getElementById('lossesCount');
+  const drawsEl = document.getElementById('drawsCount');
+  
+  // Показываем статистику с точки зрения текущего игрока
+  const myWins = gameState.isPlayer1 ? gameState.sessionStats.player1Wins : gameState.sessionStats.player2Wins;
+  const opponentWins = gameState.isPlayer1 ? gameState.sessionStats.player2Wins : gameState.sessionStats.player1Wins;
+  const draws = gameState.sessionStats.draws;
+  
+  if (winsEl) winsEl.textContent = myWins;
+  if (lossesEl) lossesEl.textContent = opponentWins;
+  if (drawsEl) drawsEl.textContent = draws;
+}
+
+// Сброс статистики (теперь сбрасывает статистику сессии)
 function resetStats() {
   // Подтверждение сброса
-  if (confirm('Вы уверены, что хотите сбросить всю статистику? Это действие нельзя отменить.')) {
-    localStorage.removeItem('rps_wins');
-    localStorage.removeItem('rps_losses');
-    localStorage.removeItem('rps_draws');
+  if (confirm('Вы уверены, что хотите сбросить статистику текущей игровой сессии?')) {
+    // Сбрасываем статистику сессии
+    gameState.sessionStats = {
+      player1Wins: 0,
+      player2Wins: 0,
+      draws: 0
+    };
     
-    updateStatsDisplay();
-    showToast('Статистика сброшена', 'success');
-    console.log('📊 Статистика сброшена');
+    // Синхронизируем с другим игроком
+    if (gameState.currentRoom) {
+      syncSessionStats();
+    }
+    
+    updateSessionStatsDisplay();
+    showToast('Статистика сессии сброшена', 'success');
+    console.log('📊 Статистика сессии сброшена');
   }
 }
 
