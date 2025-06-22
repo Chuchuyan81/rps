@@ -626,6 +626,14 @@ async function makeMove(choice) {
   gameState.myChoice = sanitizedChoice;
   toggleChoiceButtons(false);
   updatePlayerChoice(true, sanitizedChoice);
+  
+  // Обновляем статус своего хода сразу
+  const myStatus = document.getElementById('myStatus');
+  if (myStatus) {
+    myStatus.textContent = 'Ход сделан ✅';
+    myStatus.style.color = '#10b981'; // Зеленый цвет
+  }
+  
   showStatus(`Ваш выбор: ${sanitizedChoice}. Ожидание хода оппонента...`);
 
   try {
@@ -664,6 +672,14 @@ async function makeMove(choice) {
     // Откатываем изменения
     gameState.myChoice = null;
     toggleChoiceButtons(true);
+    // Сбрасываем статус хода
+    const myStatus = document.getElementById('myStatus');
+    if (myStatus) {
+      myStatus.textContent = 'Ваш ход';
+      myStatus.style.color = '';
+    }
+    // Сбрасываем отображение выбора
+    updatePlayerChoice(true, null);
   }
 }
 
@@ -807,10 +823,17 @@ function handleGameUpdate(gameData) {
     if (myChoice && !gameState.myChoice) {
       gameState.myChoice = myChoice;
       updatePlayerChoice(true, myChoice);
+      // Обновляем статус своего хода
+      const myStatus = document.getElementById('myStatus');
+      if (myStatus) {
+        myStatus.textContent = 'Ход сделан ✅';
+        myStatus.style.color = '#10b981'; // Зеленый цвет
+      }
     }
     if (opponentChoice && !gameState.opponentChoice) {
       gameState.opponentChoice = opponentChoice;
-      // НЕ показываем выбор оппонента до результата
+      // Показываем индикацию что оппонент сделал ход
+      updatePlayerChoice(false, '✅'); // Временная индикация
       showStatus("Оппонент сделал ход. Ожидание результата...");
     }
 
@@ -1191,7 +1214,7 @@ async function showAvailableRooms() {
     const { data: availableRooms, error } = await supabase
       .from('games')
       .select('room_id, created_at')
-      .eq('status', 'waiting')
+      .eq('status', 'waiting_player2')
       .is('player2_id', null)
       .order('created_at', { ascending: false })
       .limit(10);
@@ -1441,11 +1464,31 @@ function updatePlayerChoice(isMyChoice, choice) {
       'бумага': '📄'
     };
     
-    element.innerHTML = `<div class="choice-result">${emojiMap[choice] || choice}</div>`;
+    // Если choice равен null, сбрасываем к placeholder
+    if (!choice) {
+      element.innerHTML = `<div class="choice-placeholder">?</div>`;
+    }
+    // Если это временная индикация (✅), показываем её особым образом
+    else if (choice === '✅') {
+      element.innerHTML = `<div class="choice-pending">✅</div>`;
+    } 
+    // Обычное отображение выбора
+    else {
+      element.innerHTML = `<div class="choice-result">${emojiMap[choice] || choice}</div>`;
+    }
   }
   
   if (statusElement) {
-    statusElement.textContent = isMyChoice ? 'Ход сделан' : 'Ход сделан';
+    if (!choice) {
+      statusElement.textContent = isMyChoice ? 'Ваш ход' : 'Ожидание';
+      statusElement.style.color = ''; // Сброс цвета
+    } else if (choice === '✅') {
+      statusElement.textContent = 'Ход сделан ✅';
+      statusElement.style.color = '#10b981'; // Зеленый цвет
+    } else {
+      statusElement.textContent = isMyChoice ? 'Ход сделан' : 'Ход сделан';
+      statusElement.style.color = ''; // Сброс цвета
+    }
   }
 }
 
@@ -1464,9 +1507,11 @@ function resetPlayerChoices() {
   }
   if (myStatus) {
     myStatus.textContent = 'Ваш ход';
+    myStatus.style.color = ''; // Сброс цвета
   }
   if (opponentStatus) {
     opponentStatus.textContent = 'Ожидание';
+    opponentStatus.style.color = ''; // Сброс цвета
   }
 }
 
