@@ -41,6 +41,18 @@ window.addEventListener('DOMContentLoaded', () => {
     // Тестируем подключение
     testConnection();
     
+    // Добавляем обработчики для сетевых событий
+    window.addEventListener('offline', () => {
+      showStatus("Нет соединения. Проверяйте интернет.", true);
+    });
+
+    window.addEventListener('online', () => {
+      showStatus("Соединение восстановлено.");
+      if (gameState.currentRoom) {
+        subscribeToUpdates();
+      }
+    });
+    
   } catch (error) {
     console.error('Error initializing Supabase:', error);
     showStatus("Ошибка инициализации Supabase: " + error.message, true);
@@ -68,10 +80,12 @@ async function testConnection() {
   if (!supabase) return;
   
   try {
-    const { data, error } = await supabase
-      .from('games')
-      .select('count')
-      .limit(1);
+    const { data, error } = await retryWrapper(() => 
+      supabase
+        .from('games')
+        .select('count')
+        .limit(1)
+    );
     
     if (error) {
       console.error('Connection test failed:', error);
@@ -190,6 +204,9 @@ async function handleAction() {
 
 // Создание комнаты
 async function createRoom() {
+  // Опциональная очистка старых комнат перед созданием
+  await cleanupOldRooms();
+
   let room_id;
   let attempts = 0;
   const maxAttempts = 10;
@@ -204,11 +221,13 @@ async function createRoom() {
     room_id = Math.floor(1000 + Math.random() * 9000).toString();
     
     try {
-      const { data: existingRoom, error: checkError } = await supabase
-        .from("games")
-        .select("room_id")
-        .eq("room_id", room_id)
-        .maybeSingle();
+      const { data: existingRoom, error: checkError } = await retryWrapper(() =>
+        supabase
+          .from("games")
+          .select("room_id")
+          .eq("room_id", room_id)
+          .maybeSingle()
+      );
 
       if (checkError && checkError.code !== 'PGRST116') {
         throw checkError;
@@ -238,11 +257,13 @@ async function createRoom() {
     updated_at: new Date().toISOString()
   };
 
-  const { data, error } = await supabase
-    .from("games")
-    .insert([gameData])
-    .select()
-    .single();
+  const { data, error } = await retryWrapper(() =>
+    supabase
+      .from("games")
+      .insert([gameData])
+      .select()
+      .single()
+  );
 
   if (error) {
     console.error('Error creating room:', error);
@@ -273,13 +294,15 @@ async function createRoom() {
 // Очистка старых/поврежденных комнат (опционально)
 async function cleanupOldRooms() {
   try {
-    // Удаляем комнаты старше 1 часа
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    // Удаляем комнаты старше 2 часов
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
     
-    const { error } = await supabase
-      .from("games")
-      .delete()
-      .lt("created_at", oneHourAgo);
+    const { error } = await retryWrapper(() =>
+      supabase
+        .from("games")
+        .delete()
+        .lt("created_at", twoHoursAgo)
+    );
 
     if (error) {
       console.error('Ошибка очистки старых комнат:', error);
@@ -304,11 +327,13 @@ async function joinRoom(room_id) {
 
   try {
     // Проверяем существование комнаты
-    const { data: existingGame, error: selectError } = await supabase
-      .from("games")
-      .select("*")
-      .eq("room_id", room_id)
-      .single();
+    const { data: existingGame, error: selectError } = await retryWrapper(() =>
+      supabase
+        .from("games")
+        .select("*")
+        .eq("room_id", room_id)
+        .single()
+    );
 
     if (selectError) {
       if (selectError.code === 'PGRST116') {
@@ -321,16 +346,19 @@ async function joinRoom(room_id) {
       throw new Error("Комната не найдена!");
     }
 
+    // Проверяем возраст комнаты
+    const createdTime = new Date(existingGame.created_at);
+    const ageInHours = (Date.now() - createdTime.getTime()) / (1000 * 60 * 60);
+    if (ageInHours > 2) {
+      // Удаляем устаревшую комнату
+      await deleteRoomFromDB();
+      throw new Error("Комната устарела (более 2 часов). Создайте новую.");
+    }
+
     console.log('Найдена комната для присоединения:', existingGame);
     console.log('Текущий playerId:', gameState.playerId);
     console.log('Player1 ID в комнате:', existingGame.player1_id);
     console.log('Player2 ID в комнате:', existingGame.player2_id);
-
-    // Проверяем, что игрок не пытается присоединиться к своей же комнате
-    // НО: пропускаем эту проверку, так как у разных сессий разные playerId
-    // if (existingGame.player1_id === gameState.playerId) {
-    //   throw new Error("Нельзя присоединиться к своей собственной комнате!");
-    // }
 
     // Проверяем заполненность комнаты
     if (existingGame.player2_id && existingGame.player2_id.trim() !== '') {
@@ -346,18 +374,20 @@ async function joinRoom(room_id) {
     console.log('Все проверки пройдены, присоединяемся к комнате...');
 
     // Присоединяемся к комнате с дополнительными условиями
-    const { data: updatedGame, error: updateError } = await supabase
-      .from("games")
-      .update({ 
-        player2_id: gameState.playerId,
-        status: 'ready',
-        updated_at: new Date().toISOString()
-      })
-      .eq("room_id", room_id)
-      .eq("status", "waiting_player2") // Проверяем статус
-      .is("player2_id", null) // Используем is() для проверки NULL
-      .select()
-      .single();
+    const { data: updatedGame, error: updateError } = await retryWrapper(() =>
+      supabase
+        .from("games")
+        .update({ 
+          player2_id: gameState.playerId,
+          status: 'ready',
+          updated_at: new Date().toISOString()
+        })
+        .eq("room_id", room_id)
+        .eq("status", "waiting_player2") // Проверяем статус
+        .is("player2_id", null) // Используем is() для проверки NULL
+        .select()
+        .single()
+    );
 
     if (updateError) {
       console.error('Ошибка при обновлении комнаты:', updateError);
@@ -462,10 +492,12 @@ async function makeMove(choice) {
       gameState.gameStatus = 'playing';
     }
 
-    const { error } = await supabase
-      .from("games")
-      .update(updateData)
-      .eq("room_id", gameState.currentRoom);
+    const { error } = await retryWrapper(() =>
+      supabase
+        .from("games")
+        .update(updateData)
+        .eq("room_id", gameState.currentRoom)
+    );
 
     if (error) {
       throw error;
@@ -515,15 +547,17 @@ async function resetRound() {
   if (!gameState.currentRoom || !supabase) return;
 
   try {
-    const { error } = await supabase
-      .from("games")
-      .update({ 
-        player1_choice: null, 
-        player2_choice: null, 
-        status: 'ready',
-        updated_at: new Date().toISOString()
-      })
-      .eq("room_id", gameState.currentRoom);
+    const { error } = await retryWrapper(() =>
+      supabase
+        .from("games")
+        .update({ 
+          player1_choice: null, 
+          player2_choice: null, 
+          status: 'ready',
+          updated_at: new Date().toISOString()
+        })
+        .eq("room_id", gameState.currentRoom)
+    );
 
     if (error) {
       throw error;
@@ -649,10 +683,12 @@ async function deleteRoomFromDB() {
   }
 
   try {
-    const { error } = await supabase
-      .from("games")
-      .delete()
-      .eq("room_id", gameState.currentRoom);
+    const { error } = await retryWrapper(() =>
+      supabase
+        .from("games")
+        .delete()
+        .eq("room_id", gameState.currentRoom)
+    );
 
     if (error) {
       console.error('Error deleting room:', error);
@@ -725,6 +761,29 @@ document.addEventListener('visibilitychange', () => {
     console.log("Страница видима");
   }
 });
+
+/**
+ * Обертка для повторных попыток сетевых запросов с exponential backoff
+ * @param {Function} asyncFn - Асинхронная функция для выполнения
+ * @param {number} maxRetries - Максимальное количество попыток (по умолчанию 3)
+ * @returns {Promise} - Результат выполнения функции
+ */
+async function retryWrapper(asyncFn, maxRetries = 3) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await asyncFn();
+    } catch (error) {
+      lastError = error;
+      console.error(`Попытка ${attempt} не удалась: ${error.message}`);
+      if (attempt < maxRetries) {
+        const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  throw lastError;
+}
 
 // === PWA ФУНКЦИОНАЛЬНОСТЬ ===
 
