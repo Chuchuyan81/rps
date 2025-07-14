@@ -38,8 +38,20 @@ window.addEventListener('DOMContentLoaded', () => {
     console.log('Глобальная переменная window.supabaseClient доступна для тестирования');
     showStatus("Готов к игре! Создайте комнату или присоединитесь к существующей.");
     
+    // Проверяем видимость кнопки бота
+    const botButton = document.getElementById('botButton');
+    if (botButton) {
+      console.log('🤖 Кнопка бота найдена и видна:', botButton.style.display !== 'none');
+      console.log('🤖 Стили кнопки бота:', window.getComputedStyle(botButton).display);
+    } else {
+      console.error('🤖 Кнопка бота не найдена в DOM!');
+    }
+    
     // Тестируем подключение
     testConnection();
+    
+    // Инициализируем бот-комнату при загрузке
+    initializeBotRoom();
     
     // Добавляем обработчики для сетевых событий
     window.addEventListener('offline', () => {
@@ -59,370 +71,43 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// Состояние игры
-let gameState = {
-  currentRoom: null,
-  playerId: null,
-  isPlayer1: false,
-  channel: null,
-  myChoice: null,
-  opponentChoice: null,
-  gameStatus: 'idle', // idle, waiting, playing, finished
-  playingWithBot: false // флаг игры с ботом
-};
-
-// Константы
-const BOT_ROOM_ID = "9999"; // Фиксированный ID для комнаты с ботом
-const BOT_PLAYER_ID = "bot_player_9999"; // ID бота
-
-// Генерация уникального ID игрока
-function generatePlayerId() {
-  return 'player_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now().toString(36);
-}
-
-// Тестирование подключения
-async function testConnection() {
-  if (!supabase) return;
+/**
+ * Инициализация бот-комнаты при загрузке страницы
+ * Создает комнату с ботом, если её нет
+ */
+async function initializeBotRoom() {
+  console.log('🤖 Инициализация бот-комнаты...');
   
-  try {
-    const { data, error } = await retryWrapper(() => 
-      supabase
-        .from('games')
-        .select('count')
-        .limit(1)
-    );
-    
-    if (error) {
-      console.error('Connection test failed:', error);
-      showStatus(`Ошибка подключения к базе данных: ${error.message}`, true);
-    } else {
-      console.log('Connection test successful');
-    }
-  } catch (error) {
-    console.error('Connection test error:', error);
-    showStatus("Ошибка сети. Проверьте подключение к интернету.", true);
-  }
-}
-
-// Показать статус игры
-function showStatus(message, isError = false) {
-  const resultEl = document.getElementById("result");
-  if (resultEl) {
-    resultEl.innerText = message;
-    resultEl.className = `result ${isError ? 'error' : ''}`;
-  }
-  console.log(`Status: ${message}`);
-}
-
-// Показать лоадер
-function showLoader(show = true) {
-  const actionButton = document.getElementById("actionButton");
-  if (actionButton) {
-    actionButton.disabled = show;
-    if (show) {
-      actionButton.textContent = "Загрузка...";
-      actionButton.classList.add('loading');
-    } else {
-      actionButton.classList.remove('loading');
-      updateButton(); // Восстанавливаем правильный текст
-    }
-  }
-}
-
-// Валидация room_id
-function validateRoomId(roomId) {
-  const trimmed = roomId.trim();
-  if (trimmed.length === 0) {
-    return { valid: false, message: "ID комнаты не может быть пустым" };
-  }
-  if (trimmed.length !== 4) {
-    return { valid: false, message: "ID комнаты должен содержать ровно 4 цифры" };
-  }
-  if (!/^\d{4}$/.test(trimmed)) {
-    return { valid: false, message: "ID комнаты должен содержать только цифры" };
-  }
-  return { valid: true, roomId: trimmed };
-}
-
-// Динамическое изменение кнопки
-function updateButton() {
-  const roomInput = document.getElementById("room");
-  const actionButton = document.getElementById("actionButton");
-
-  if (!roomInput || !actionButton) return;
-
-  // Фильтруем только цифры
-  roomInput.value = roomInput.value.replace(/[^0-9]/g, '');
-
-  // Всегда показываем "Создать комнату" когда поле пустое
-  // И "Присоединиться" когда поле заполнено
-  if (roomInput.value.trim() === "") {
-    actionButton.textContent = "Создать комнату";
-    console.log("Button set to: Создать комнату");
-  } else {
-    actionButton.textContent = "Присоединиться";
-    console.log(`Button set to: Присоединиться (Room ID: ${roomInput.value})`);
-  }
-}
-
-// Обработка нажатия на кнопку
-async function handleAction() {
   if (!supabase) {
-    showStatus("Supabase не инициализирован", true);
+    console.error('Supabase не доступен для инициализации бот-комнаты');
     return;
   }
 
-  const roomInput = document.getElementById("room");
-  const actionButton = document.getElementById("actionButton");
+  try {
+    await ensureBotRoomExists();
+    console.log('🤖 Бот-комната инициализирована успешно');
+  } catch (error) {
+    console.error('🤖 Ошибка инициализации бот-комнаты:', error);
+  }
+}
+
+/**
+ * Инициализация бот-комнаты при загрузке страницы
+ * Создает комнату с ботом, если её нет
+ */
+async function initializeBotRoom() {
+  console.log('🤖 Инициализация бот-комнаты...');
   
-  if (!roomInput || !actionButton) return;
-
-  const room_id = roomInput.value.trim();
-  // Сохраняем оригинальный текст кнопки ДО вызова showLoader
-  const originalButtonText = actionButton.textContent;
-
-  showLoader(true);
-  showStatus("");
+  if (!supabase) {
+    console.error('Supabase не доступен для инициализации бот-комнаты');
+    return;
+  }
 
   try {
-    if (originalButtonText.includes("Создать")) {
-      console.log("Creating new room...");
-      await createRoom();
-    } else {
-      console.log(`Attempting to join room: ${room_id}`);
-      // Валидация только при присоединении к комнате
-      const validation = validateRoomId(room_id);
-      if (!validation.valid) {
-        showStatus(validation.message, true);
-        showLoader(false);
-        return;
-      }
-      await joinRoom(validation.roomId);
-    }
+    await ensureBotRoomExists();
+    console.log('🤖 Бот-комната инициализирована успешно');
   } catch (error) {
-    console.error("Ошибка в handleAction:", error);
-    showStatus(`Произошла ошибка: ${error.message}`, true);
-  } finally {
-    showLoader(false);
-  }
-}
-
-// Создание комнаты
-async function createRoom() {
-  // Опциональная очистка старых комнат перед созданием
-  await cleanupOldRooms();
-
-  let room_id;
-  let attempts = 0;
-  const maxAttempts = 10;
-
-  // Генерируем уникальный ID игрока
-  gameState.playerId = generatePlayerId();
-  gameState.isPlayer1 = true;
-
-  // Создаем уникальный room_id из 4 цифр с несколькими попытками
-  while (attempts < maxAttempts) {
-    // Генерируем ID из 4 случайных цифр
-    room_id = Math.floor(1000 + Math.random() * 9000).toString();
-    
-    try {
-      const { data: existingRoom, error: checkError } = await retryWrapper(() =>
-        supabase
-          .from("games")
-          .select("room_id")
-          .eq("room_id", room_id)
-          .maybeSingle()
-      );
-
-      if (checkError && checkError.code !== 'PGRST116') {
-        throw checkError;
-      }
-
-      if (!existingRoom) break;
-      attempts++;
-    } catch (error) {
-      console.error('Error checking room existence:', error);
-      attempts++;
-    }
-  }
-
-  if (attempts >= maxAttempts) {
-    throw new Error("Не удалось создать уникальный ID комнаты. Попробуйте еще раз.");
-  }
-
-  // Создаем запись в базе данных
-  const gameData = {
-    room_id: room_id,
-    player1_id: gameState.playerId,
-    player2_id: null,
-    player1_choice: null,
-    player2_choice: null,
-    status: 'waiting_player2',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  };
-
-  const { data, error } = await retryWrapper(() =>
-    supabase
-      .from("games")
-      .insert([gameData])
-      .select()
-      .single()
-  );
-
-  if (error) {
-    console.error('Error creating room:', error);
-    throw new Error(`Ошибка создания комнаты: ${error.message}`);
-  }
-
-  console.log('Room created successfully:', data);
-
-  // Обновляем состояние
-  gameState.currentRoom = room_id;
-  gameState.gameStatus = 'waiting';
-
-  // Обновляем UI
-  const roomInput = document.getElementById("room");
-  if (roomInput) {
-    roomInput.value = room_id;
-    console.log(`Room ID ${room_id} inserted into input field`);
-    // Обновляем кнопку после заполнения поля
-    updateButton();
-    console.log("Button updated after room creation");
-  }
-
-  showGameUI();
-  showStatus(`Комната ${room_id} создана! Ожидание второго игрока...`);
-  subscribeToUpdates();
-}
-
-// Очистка старых/поврежденных комнат (опционально)
-async function cleanupOldRooms() {
-  try {
-    // Удаляем комнаты старше 2 часов
-    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
-    
-    const { error } = await retryWrapper(() =>
-      supabase
-        .from("games")
-        .delete()
-        .lt("created_at", twoHoursAgo)
-    );
-
-    if (error) {
-      console.error('Ошибка очистки старых комнат:', error);
-    } else {
-      console.log('Старые комнаты очищены');
-    }
-  } catch (error) {
-    console.error('Исключение при очистке:', error);
-  }
-}
-
-// Присоединение к комнате
-async function joinRoom(room_id) {
-  // Опциональная очистка старых комнат перед присоединением
-  await cleanupOldRooms();
-  
-  // Генерируем уникальный ID игрока только если его еще нет
-  if (!gameState.playerId) {
-    gameState.playerId = generatePlayerId();
-  }
-  gameState.isPlayer1 = false;
-
-  try {
-    // Проверяем существование комнаты
-    const { data: existingGame, error: selectError } = await retryWrapper(() =>
-      supabase
-        .from("games")
-        .select("*")
-        .eq("room_id", room_id)
-        .single()
-    );
-
-    if (selectError) {
-      if (selectError.code === 'PGRST116') {
-        throw new Error("Комната не найдена!");
-      }
-      throw selectError;
-    }
-
-    if (!existingGame) {
-      throw new Error("Комната не найдена!");
-    }
-
-    // Проверяем возраст комнаты
-    const createdTime = new Date(existingGame.created_at);
-    const ageInHours = (Date.now() - createdTime.getTime()) / (1000 * 60 * 60);
-    if (ageInHours > 2) {
-      // Удаляем устаревшую комнату
-      await deleteRoomFromDB();
-      throw new Error("Комната устарела (более 2 часов). Создайте новую.");
-    }
-
-    console.log('Найдена комната для присоединения:', existingGame);
-    console.log('Текущий playerId:', gameState.playerId);
-    console.log('Player1 ID в комнате:', existingGame.player1_id);
-    console.log('Player2 ID в комнате:', existingGame.player2_id);
-
-    // Проверяем заполненность комнаты
-    if (existingGame.player2_id && existingGame.player2_id.trim() !== '') {
-      console.log('Комната уже заполнена. player2_id:', existingGame.player2_id);
-      throw new Error("Комната уже заполнена!");
-    }
-
-    if (existingGame.status !== 'waiting_player2') {
-      console.log('Статус комнаты не подходит для присоединения:', existingGame.status);
-      throw new Error("Комната недоступна для присоединения!");
-    }
-
-    console.log('Все проверки пройдены, присоединяемся к комнате...');
-
-    // Присоединяемся к комнате с дополнительными условиями
-    const { data: updatedGame, error: updateError } = await retryWrapper(() =>
-      supabase
-        .from("games")
-        .update({ 
-          player2_id: gameState.playerId,
-          status: 'ready',
-          updated_at: new Date().toISOString()
-        })
-        .eq("room_id", room_id)
-        .eq("status", "waiting_player2") // Проверяем статус
-        .is("player2_id", null) // Используем is() для проверки NULL
-        .select()
-        .single()
-    );
-
-    if (updateError) {
-      console.error('Ошибка при обновлении комнаты:', updateError);
-      if (updateError.code === 'PGRST116') {
-        throw new Error("Комната уже заполнена или недоступна!");
-      }
-      throw updateError;
-    }
-
-    if (!updatedGame) {
-      throw new Error("Не удалось присоединиться к комнате. Возможно, она уже заполнена.");
-    }
-
-    console.log('Успешно присоединились к комнате:', updatedGame);
-
-    // Обновляем состояние
-    gameState.currentRoom = room_id;
-    gameState.gameStatus = 'ready';
-
-    showGameUI();
-    showStatus("Присоединились к комнате! Игра началась!");
-    
-    // Активируем кнопки для игрока 2 сразу после присоединения
-    toggleChoiceButtons(true);
-    
-    subscribeToUpdates();
-
-  } catch (error) {
-    console.error('Ошибка присоединения к комнате:', error);
-    throw error;
+    console.error('🤖 Ошибка инициализации бот-комнаты:', error);
   }
 }
 
@@ -431,26 +116,34 @@ async function joinRoom(room_id) {
  * Присоединяется к специальной комнате с ботом
  */
 async function playWithBot() {
+  console.log('🤖 Функция playWithBot вызвана');
+  
   if (!supabase) {
+    console.error('Supabase не инициализирован');
     showStatus("Supabase не инициализирован", true);
     return;
   }
 
+  console.log('🤖 Начинаем подключение к боту...');
   showLoader(true);
   showStatus("Подключение к боту...");
 
   try {
     // Устанавливаем флаг игры с ботом
     gameState.playingWithBot = true;
+    console.log('🤖 Флаг playingWithBot установлен');
     
     // Генерируем ID игрока
     gameState.playerId = generatePlayerId();
     gameState.isPlayer1 = false; // Игрок всегда второй, бот - первый
+    console.log('🤖 ID игрока сгенерирован:', gameState.playerId);
     
     // Проверяем/создаем комнату с ботом
+    console.log('🤖 Проверяем/создаем бот-комнату...');
     await ensureBotRoomExists();
     
     // Присоединяемся к комнате с ботом
+    console.log('🤖 Присоединяемся к бот-комнате...');
     const { data: updatedGame, error: updateError } = await retryWrapper(() =>
       supabase
         .from("games")
@@ -469,7 +162,7 @@ async function playWithBot() {
       throw new Error(`Ошибка подключения к боту: ${updateError.message}`);
     }
 
-    console.log('Успешно присоединились к бот-комнате:', updatedGame);
+    console.log('🤖 Успешно присоединились к бот-комнате:', updatedGame);
 
     // Обновляем состояние
     gameState.currentRoom = BOT_ROOM_ID;
@@ -481,16 +174,20 @@ async function playWithBot() {
       roomInput.value = BOT_ROOM_ID;
     }
 
+    console.log('🤖 Показываем игровой UI...');
     showGameUI();
     showStatus("Подключились к боту! Сделайте ваш выбор:");
     
     // Активируем кнопки для игры
     toggleChoiceButtons(true);
     
+    console.log('🤖 Подписываемся на обновления...');
     subscribeToUpdates();
 
+    console.log('🤖 Подключение к боту завершено успешно!');
+
   } catch (error) {
-    console.error('Ошибка подключения к боту:', error);
+    console.error('🤖 Ошибка подключения к боту:', error);
     showStatus(`Ошибка подключения к боту: ${error.message}`, true);
     gameState.playingWithBot = false;
   } finally {
