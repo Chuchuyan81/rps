@@ -102,6 +102,37 @@ h1 {
   transform: none;
 }
 
+/* Кнопка бота */
+.bot-btn {
+  width: 100%;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  outline: none;
+  margin-top: 10px;
+}
+
+.bot-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+}
+
+.bot-btn:active {
+  transform: translateY(0);
+}
+
+.bot-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* Выбор ходов */
 .choices {
   margin: 2rem 0;

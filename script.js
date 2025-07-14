@@ -67,8 +67,13 @@ let gameState = {
   channel: null,
   myChoice: null,
   opponentChoice: null,
-  gameStatus: 'idle' // idle, waiting, playing, finished
+  gameStatus: 'idle', // idle, waiting, playing, finished
+  playingWithBot: false // флаг игры с ботом
 };
+
+// Константы
+const BOT_ROOM_ID = "9999"; // Фиксированный ID для комнаты с ботом
+const BOT_PLAYER_ID = "bot_player_9999"; // ID бота
 
 // Генерация уникального ID игрока
 function generatePlayerId() {
@@ -421,6 +426,186 @@ async function joinRoom(room_id) {
   }
 }
 
+/**
+ * Функция для игры с ботом
+ * Присоединяется к специальной комнате с ботом
+ */
+async function playWithBot() {
+  if (!supabase) {
+    showStatus("Supabase не инициализирован", true);
+    return;
+  }
+
+  showLoader(true);
+  showStatus("Подключение к боту...");
+
+  try {
+    // Устанавливаем флаг игры с ботом
+    gameState.playingWithBot = true;
+    
+    // Генерируем ID игрока
+    gameState.playerId = generatePlayerId();
+    gameState.isPlayer1 = false; // Игрок всегда второй, бот - первый
+    
+    // Проверяем/создаем комнату с ботом
+    await ensureBotRoomExists();
+    
+    // Присоединяемся к комнате с ботом
+    const { data: updatedGame, error: updateError } = await retryWrapper(() =>
+      supabase
+        .from("games")
+        .update({ 
+          player2_id: gameState.playerId,
+          status: 'ready',
+          updated_at: new Date().toISOString()
+        })
+        .eq("room_id", BOT_ROOM_ID)
+        .select()
+        .single()
+    );
+
+    if (updateError) {
+      console.error('Ошибка при присоединении к бот-комнате:', updateError);
+      throw new Error(`Ошибка подключения к боту: ${updateError.message}`);
+    }
+
+    console.log('Успешно присоединились к бот-комнате:', updatedGame);
+
+    // Обновляем состояние
+    gameState.currentRoom = BOT_ROOM_ID;
+    gameState.gameStatus = 'ready';
+
+    // Обновляем UI
+    const roomInput = document.getElementById("room");
+    if (roomInput) {
+      roomInput.value = BOT_ROOM_ID;
+    }
+
+    showGameUI();
+    showStatus("Подключились к боту! Сделайте ваш выбор:");
+    
+    // Активируем кнопки для игры
+    toggleChoiceButtons(true);
+    
+    subscribeToUpdates();
+
+  } catch (error) {
+    console.error('Ошибка подключения к боту:', error);
+    showStatus(`Ошибка подключения к боту: ${error.message}`, true);
+    gameState.playingWithBot = false;
+  } finally {
+    showLoader(false);
+  }
+}
+
+/**
+ * Обеспечивает существование комнаты с ботом
+ */
+async function ensureBotRoomExists() {
+  try {
+    // Проверяем существование комнаты с ботом
+    const { data: existingRoom, error: selectError } = await retryWrapper(() =>
+      supabase
+        .from("games")
+        .select("*")
+        .eq("room_id", BOT_ROOM_ID)
+        .single()
+    );
+
+    if (selectError && selectError.code !== 'PGRST116') {
+      throw selectError;
+    }
+
+    if (!existingRoom) {
+      // Создаем новую комнату с ботом
+      const gameData = {
+        room_id: BOT_ROOM_ID,
+        player1_id: BOT_PLAYER_ID,
+        player2_id: null,
+        player1_choice: null,
+        player2_choice: null,
+        status: 'waiting_player2',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await retryWrapper(() =>
+        supabase
+          .from("games")
+          .insert([gameData])
+          .select()
+          .single()
+      );
+
+      if (error) {
+        throw new Error(`Ошибка создания бот-комнаты: ${error.message}`);
+      }
+
+      console.log('Бот-комната создана:', data);
+    } else {
+      // Сбрасываем состояние существующей комнаты
+      const { error: resetError } = await retryWrapper(() =>
+        supabase
+          .from("games")
+          .update({
+            player2_id: null,
+            player1_choice: null,
+            player2_choice: null,
+            status: 'waiting_player2',
+            updated_at: new Date().toISOString()
+          })
+          .eq("room_id", BOT_ROOM_ID)
+      );
+
+      if (resetError) {
+        console.error('Ошибка сброса бот-комнаты:', resetError);
+      } else {
+        console.log('Бот-комната сброшена для новой игры');
+      }
+    }
+  } catch (error) {
+    console.error('Ошибка при обеспечении бот-комнаты:', error);
+    throw error;
+  }
+}
+
+/**
+ * Логика бота для автоматических ходов
+ * Бот делает случайный выбор через небольшую задержку
+ */
+async function makeBotMove() {
+  if (!gameState.playingWithBot || gameState.currentRoom !== BOT_ROOM_ID) {
+    return;
+  }
+
+  // Задержка для реалистичности
+  await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+
+  const choices = ['камень', 'ножницы', 'бумага'];
+  const botChoice = choices[Math.floor(Math.random() * choices.length)];
+
+  try {
+    const { error } = await retryWrapper(() =>
+      supabase
+        .from("games")
+        .update({
+          player1_choice: botChoice,
+          status: 'playing',
+          updated_at: new Date().toISOString()
+        })
+        .eq("room_id", BOT_ROOM_ID)
+    );
+
+    if (error) {
+      console.error('Ошибка хода бота:', error);
+    } else {
+      console.log('Бот сделал ход:', botChoice);
+    }
+  } catch (error) {
+    console.error('Исключение при ходе бота:', error);
+  }
+}
+
 // Отображение кнопок выбора
 function showGameUI() {
   const choices = document.getElementById("choices");
@@ -635,7 +820,11 @@ function handleGameUpdate(gameData) {
   // Обновляем статус подключения игроков
   if (status === 'ready' && player2_id) {
     if (gameState.gameStatus === 'waiting') {
-      showStatus("Второй игрок присоединился! Сделайте ваш выбор:");
+      if (gameState.playingWithBot) {
+        showStatus("Бот готов! Сделайте ваш выбор:");
+      } else {
+        showStatus("Второй игрок присоединился! Сделайте ваш выбор:");
+      }
     }
     gameState.gameStatus = 'ready';
     // Активируем кнопки для обоих игроков когда игра готова
@@ -653,7 +842,11 @@ function handleGameUpdate(gameData) {
     }
     if (opponentChoice && !gameState.opponentChoice) {
       gameState.opponentChoice = opponentChoice;
-      showStatus("Оппонент сделал ход. Ожидание результата...");
+      if (gameState.playingWithBot) {
+        showStatus("Бот сделал ход. Ожидание результата...");
+      } else {
+        showStatus("Оппонент сделал ход. Ожидание результата...");
+      }
     }
 
     // Если оба сделали ходы, показываем результат
@@ -662,7 +855,8 @@ function handleGameUpdate(gameData) {
       const myChoiceDisplay = gameState.isPlayer1 ? player1_choice : player2_choice;
       const opponentChoiceDisplay = gameState.isPlayer1 ? player2_choice : player1_choice;
       
-      showStatus(`${result.message} (Вы: ${myChoiceDisplay}, Оппонент: ${opponentChoiceDisplay})`);
+      const opponentName = gameState.playingWithBot ? "Бот" : "Оппонент";
+      showStatus(`${result.message} (Вы: ${myChoiceDisplay}, ${opponentName}: ${opponentChoiceDisplay})`);
       
       gameState.gameStatus = 'finished';
       toggleChoiceButtons(false);
@@ -672,6 +866,11 @@ function handleGameUpdate(gameData) {
         resetRound();
       }, 4000);
     }
+  }
+
+  // Если играем с ботом и игрок сделал ход, запускаем ход бота
+  if (gameState.playingWithBot && player2_choice && !player1_choice) {
+    makeBotMove();
   }
 }
 
@@ -709,8 +908,29 @@ function cleanup() {
 
 // Полная очистка при выходе
 async function fullCleanup() {
-  // Удаляем комнату из БД перед очисткой состояния
-  await deleteRoomFromDB();
+  // Удаляем комнату из БД перед очисткой состояния (но не бот-комнату)
+  if (gameState.currentRoom && gameState.currentRoom !== BOT_ROOM_ID) {
+    await deleteRoomFromDB();
+  } else if (gameState.playingWithBot && gameState.currentRoom === BOT_ROOM_ID) {
+    // Для бот-комнаты просто сбрасываем player2
+    try {
+      await retryWrapper(() =>
+        supabase
+          .from("games")
+          .update({
+            player2_id: null,
+            player1_choice: null,
+            player2_choice: null,
+            status: 'waiting_player2',
+            updated_at: new Date().toISOString()
+          })
+          .eq("room_id", BOT_ROOM_ID)
+      );
+      console.log('Бот-комната сброшена после выхода игрока');
+    } catch (error) {
+      console.error('Ошибка сброса бот-комнаты:', error);
+    }
+  }
   
   cleanup();
   
@@ -721,6 +941,7 @@ async function fullCleanup() {
   gameState.myChoice = null;
   gameState.opponentChoice = null;
   gameState.gameStatus = 'idle';
+  gameState.playingWithBot = false;
 
   // Сброс UI
   const choices = document.getElementById("choices");
@@ -741,7 +962,11 @@ async function fullCleanup() {
   }
 
   toggleChoiceButtons(false);
-  showStatus("Игра завершена. Комната удалена из базы данных.");
+  
+  const statusMessage = gameState.playingWithBot ? 
+    "Игра с ботом завершена." : 
+    "Игра завершена. Комната удалена из базы данных.";
+  showStatus(statusMessage);
 }
 
 // Обработка закрытия страницы
