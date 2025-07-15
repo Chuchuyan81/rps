@@ -2,6 +2,22 @@
 const supabaseUrl = "https://kdbbyqsdmucjvsatbiog.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkYmJ5cXNkbXVjanZzYXRiaW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0MzQxNzcsImV4cCI6MjA2NjAxMDE3N30.v6wR9s1zCyYL-xN2Rohoi35LJ-f1uA1Y5KPPjQoXhLU";
 
+// Константы для бот-комнаты
+const BOT_ROOM_ID = '9999';
+const BOT_PLAYER_ID = 'bot_player_9999';
+
+// Глобальное состояние игры
+const gameState = {
+  currentRoom: null,      // ID текущей комнаты
+  playerId: null,         // Уникальный ID игрока  
+  isPlayer1: false,       // Роль игрока
+  channel: null,          // Supabase канал
+  myChoice: null,         // Мой выбор
+  opponentChoice: null,   // Выбор оппонента
+  gameStatus: 'idle',     // Статус: idle|waiting|playing|finished
+  playingWithBot: false   // Играем ли мы с ботом
+};
+
 // Ждем загрузки Supabase библиотеки
 let supabase = null;
 
@@ -400,7 +416,7 @@ async function makeMove(choice) {
 // Определение победителя
 function determineWinner(player1Choice, player2Choice) {
   if (player1Choice === player2Choice) {
-    return { winner: 'draw', message: 'Ничья!' };
+    return { winner: 'draw', message: '🤝 Ничья! Отличная игра!' };
   }
   
   const rules = { 
@@ -414,12 +430,12 @@ function determineWinner(player1Choice, player2Choice) {
   if (gameState.isPlayer1) {
     return {
       winner: player1Wins ? 'me' : 'opponent',
-      message: player1Wins ? 'Вы победили! 🎉' : 'Вы проиграли! 😢'
+      message: player1Wins ? '🏆 Потрясающе! Вы победили! Вы настоящий чемпион! 🥇' : '😊 Хорошая попытка! В следующий раз обязательно получится! 🌟'
     };
   } else {
     return {
       winner: player1Wins ? 'opponent' : 'me',
-      message: player1Wins ? 'Вы проиграли! 😢' : 'Вы победили! 🎉'
+      message: player1Wins ? '😊 Хорошая попытка! В следующий раз обязательно получится! 🌟' : '🏆 Потрясающе! Вы победили! Вы настоящий чемпион! 🥇'
     };
   }
 }
@@ -908,3 +924,252 @@ window.addEventListener('load', () => {
   console.log('- Режим отображения:', getPWADisplayMode());
   console.log('- iOS устройство:', isIOSDevice());
 });
+
+// Позитивная функция для показа статуса
+function showStatus(message, isError = false) {
+  const result = document.getElementById('result');
+  if (!result) return;
+  
+  if (isError) {
+    // Делаем ошибки менее негативными
+    result.innerHTML = `<div class="status-message error-message">
+      <span>😅 ${message}</span>
+      <br><small>Не переживайте, всё получится! 💪</small>
+    </div>`;
+    result.className = 'result error';
+  } else {
+    // Добавляем больше позитива в обычные сообщения
+    let positiveMessage = message;
+    
+    // Делаем сообщения более позитивными
+    if (message.includes('Готов к игре')) {
+      positiveMessage = '🎉 Всё готово! Давайте играть и веселиться! 🎮';
+    } else if (message.includes('Подключение к боту')) {
+      positiveMessage = '🤖 Подключаемся к дружелюбному боту... ⚡';
+    } else if (message.includes('Подключились к боту')) {
+      positiveMessage = '🤖✨ Отлично! Бот готов к игре! Покажите свои навыки! 🎯';
+    } else if (message.includes('Второй игрок присоединился')) {
+      positiveMessage = '🎊 Ура! Второй игрок присоединился! Пора играть! 🎪';
+    } else if (message.includes('Новый раунд')) {
+      positiveMessage = '🚀 Новый раунд! Время показать свои таланты! ⭐';
+    } else if (message.includes('Вы победили')) {
+      positiveMessage = '🏆 Потрясающе! Вы победили! Вы настоящий чемпион! 🥇';
+    } else if (message.includes('Вы проиграли')) {
+      positiveMessage = '😊 Хорошая попытка! В следующий раз обязательно получится! 🌟';
+    } else if (message.includes('Ничья')) {
+      positiveMessage = '🤝 Ничья! Отличная игра! Вы оба молодцы! 👏';
+    } else if (message.includes('Ожидание хода')) {
+      positiveMessage = message.replace('Ожидание хода', '⏳ Ожидаем хода');
+    } else if (message.includes('Соединение восстановлено')) {
+      positiveMessage = '🌐✨ Отлично! Соединение восстановлено! Продолжаем игру! 🎮';
+    }
+    
+    result.innerHTML = `<div class="status-message success-message">
+      <span>${positiveMessage}</span>
+    </div>`;
+    result.className = 'result success';
+  }
+  
+  // Добавляем анимацию появления
+  result.style.animation = 'none';
+  result.offsetHeight; // Trigger reflow
+  result.style.animation = 'resultPulse 0.5s ease-in-out';
+}
+
+// Обновление текста кнопки в зависимости от ввода
+function updateButton() {
+  const roomInput = document.getElementById('room');
+  const actionButton = document.getElementById('actionButton');
+  
+  if (!roomInput || !actionButton) return;
+  
+  const roomValue = roomInput.value.trim();
+  
+  if (roomValue === '') {
+    actionButton.textContent = '🚀 Создать комнату';
+    actionButton.className = 'action-btn';
+  } else if (roomValue.length === 4 && /^\d{4}$/.test(roomValue)) {
+    actionButton.textContent = '🎯 Присоединиться к игре';
+    actionButton.className = 'action-btn';
+  } else {
+    actionButton.textContent = '✨ Введите 4 цифры';
+    actionButton.className = 'action-btn';
+  }
+}
+
+// Обработка действий с кнопкой
+async function handleAction() {
+  const roomInput = document.getElementById('room');
+  const actionButton = document.getElementById('actionButton');
+  
+  if (!roomInput || !actionButton) return;
+  
+  const roomValue = roomInput.value.trim();
+  
+  if (roomValue === '') {
+    // Создаем новую комнату
+    await createRoom();
+  } else if (roomValue.length === 4 && /^\d{4}$/.test(roomValue)) {
+    // Присоединяемся к существующей комнате
+    await joinRoom(roomValue);
+  } else {
+    showStatus('✨ Пожалуйста, введите корректный ID комнаты из 4 цифр! 🎯', true);
+  }
+}
+
+// Создание новой комнаты
+async function createRoom() {
+  if (!supabase) {
+    showStatus('😅 Сервис не готов. Попробуйте через секунду! ⏰', true);
+    return;
+  }
+  
+  showStatus('🎨 Создаём вашу уникальную комнату... ✨');
+  
+  try {
+    // Генерируем ID игрока
+    gameState.playerId = generatePlayerId();
+    gameState.isPlayer1 = true;
+    
+    // Пытаемся создать уникальный room_id
+    let room_id;
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (attempts < maxAttempts) {
+      room_id = Math.floor(1000 + Math.random() * 9000).toString();
+      
+      // Проверяем уникальность
+      const { data: existingRoom } = await supabase
+        .from('games')
+        .select('room_id')
+        .eq('room_id', room_id)
+        .single();
+      
+      if (!existingRoom) {
+        break; // Комната уникальна
+      }
+      
+      attempts++;
+    }
+    
+    if (attempts >= maxAttempts) {
+      showStatus('😅 Слишком много комнат! Попробуйте ещё раз! 🎲', true);
+      return;
+    }
+    
+    // Создаем комнату
+    const gameData = {
+      room_id: room_id,
+      player1_id: gameState.playerId,
+      player2_id: null,
+      player1_choice: null,
+      player2_choice: null,
+      status: 'waiting_player2',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    
+    const { data, error } = await supabase
+      .from('games')
+      .insert([gameData])
+      .select()
+      .single();
+    
+    if (error) {
+      throw error;
+    }
+    
+    // Успешно создали комнату
+    gameState.currentRoom = room_id;
+    gameState.gameStatus = 'waiting_player2';
+    
+    const roomInput = document.getElementById('room');
+    if (roomInput) {
+      roomInput.value = room_id;
+    }
+    
+    showStatus(`🎉 Ваша комната создана! ID: ${room_id} 🎊 Поделитесь с друзьями!`);
+    subscribeToUpdates();
+    
+  } catch (error) {
+    console.error('Ошибка создания комнаты:', error);
+    showStatus('😅 Что-то пошло не так при создании комнаты! Попробуйте ещё раз! 🔄', true);
+  }
+}
+
+// Присоединение к комнате
+async function joinRoom(roomId) {
+  if (!supabase) {
+    showStatus('😅 Сервис не готов. Попробуйте через секунду! ⏰', true);
+    return;
+  }
+  
+  showStatus('🚀 Присоединяемся к игре... ✨');
+  
+  try {
+    // Проверяем существование комнаты
+    const { data: room, error: selectError } = await supabase
+      .from('games')
+      .select('*')
+      .eq('room_id', roomId)
+      .single();
+    
+    if (selectError) {
+      showStatus('😅 Комната не найдена! Проверьте ID! 🔍', true);
+      return;
+    }
+    
+    if (room.player2_id) {
+      showStatus('😅 Комната уже заполнена! Попробуйте другую! 🎪', true);
+      return;
+    }
+    
+    // Присоединяемся к комнате
+    gameState.playerId = generatePlayerId();
+    gameState.isPlayer1 = false;
+    
+    const { data, error } = await supabase
+      .from('games')
+      .update({
+        player2_id: gameState.playerId,
+        status: 'ready',
+        updated_at: new Date().toISOString()
+      })
+      .eq('room_id', roomId)
+      .select()
+      .single();
+    
+    if (error) {
+      throw error;
+    }
+    
+    // Успешно присоединились
+    gameState.currentRoom = roomId;
+    gameState.gameStatus = 'ready';
+    
+    showGameUI();
+    showStatus('🎊 Отлично! Вы присоединились к игре! Удачи! 🍀');
+    subscribeToUpdates();
+    
+  } catch (error) {
+    console.error('Ошибка присоединения:', error);
+    showStatus('😅 Не удалось присоединиться! Попробуйте ещё раз! 🔄', true);
+  }
+}
+
+// Генерация ID игрока
+function generatePlayerId() {
+  return 'player_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+}
+
+// Вспомогательная функция для показа загрузки
+function showLoader(show) {
+  const actionButton = document.getElementById('actionButton');
+  if (actionButton) {
+    actionButton.disabled = show;
+    if (show) {
+      actionButton.textContent = '⏳ Загружаем...';
+    }
+  }
+}
