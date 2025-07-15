@@ -53,15 +53,60 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- Гамбургер меню кнопка -->
+  <button class="hamburger-btn" id="hamburger-btn" onclick="toggleMenu()">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+
+  <!-- Боковое меню -->
+  <div class="sidebar-menu" id="sidebar-menu">
+    <div class="menu-header">
+      <h3>📋 Меню</h3>
+      <button class="close-btn" onclick="closeMenu()">✕</button>
+    </div>
+    
+    <div class="menu-content">
+      <div class="menu-section">
+        <h4>🎮 Режимы игры</h4>
+        <button id="botMenuButton" onclick="playWithBot(); closeMenu();" class="menu-btn">
+          🤖 Играть с ботом
+        </button>
+      </div>
+      
+      <div class="menu-section">
+        <h4>❓ Как играть</h4>
+        <div class="menu-info">
+          <p>💡 <strong>Как играть:</strong> Создайте комнату (получите ID из 4 цифр) или введите ID существующей комнаты друга!</p>
+          <p>🌟 <strong>Совет:</strong> Каждый ход - это новая возможность показать свою стратегию!</p>
+        </div>
+      </div>
+      
+      <div class="menu-section">
+        <h4>📱 Приложение</h4>
+        <button id="install-menu-btn" class="menu-btn" style="display: none;">
+          📱✨ Установить приложение
+        </button>
+        <div class="menu-info">
+          <p>⚡ <strong>Возможности:</strong> Работает офлайн • Быстрая загрузка • Установка на устройство • Уведомления</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Затемнение для меню -->
+  <div class="menu-overlay" id="menu-overlay" onclick="closeMenu()"></div>
+
   <div class="container">
-    <h1>🎮✨ Камень, Ножницы, Бумага ✨🎉</h1>
+    <h1>🎮 Камень, Ножницы, Бумага</h1>
     
     <div id="game" class="game-container">
       <div class="room-controls">
         <input 
           type="text" 
           id="room" 
-          placeholder="✨ Введите ID комнаты (4 цифры) ✨" 
+          placeholder="Введите ID комнаты (4 цифры)" 
           oninput="updateButton()" 
           maxlength="4"
           pattern="[0-9]*"
@@ -70,13 +115,10 @@
         <button id="actionButton" onclick="handleAction()" class="action-btn">
           🚀 Создать комнату
         </button>
-        <button id="botButton" onclick="playWithBot()" class="bot-btn">
-          🤖 Играть с дружелюбным ботом
-        </button>
       </div>
 
       <div class="choices" id="choices" style="display: none;">
-        <h3>🎯 Сделайте ваш выбор и покажите мастерство! 🌟</h3>
+        <h3>🎯 Сделайте ваш выбор!</h3>
         <div class="choice-buttons">
           <button onclick="makeMove('камень')" class="choice-btn" title="Камень побеждает ножницы!">
             🪨 Камень
@@ -91,27 +133,6 @@
       </div>
       
       <div id="result" class="result"></div>
-      
-      <div class="game-info">
-        <p class="info-text">
-          💡 <strong>Как играть и веселиться:</strong> Создайте комнату (получите волшебный ID из 4 цифр) или введите ID существующей комнаты друга! 
-          Когда оба игрока готовы, сделайте ваш выбор и наслаждайтесь игрой! 🎊 После игры комната автоматически удаляется. 
-          <br><br>
-          🌟 <strong>Совет:</strong> Каждый ход - это новая возможность показать свою стратегию! Удачи! 🍀
-        </p>
-        
-        <!-- Кнопка установки PWA -->
-        <button id="install-btn" class="install-btn" style="display: none;">
-          📱✨ Установить приложение
-        </button>
-        
-        <div class="pwa-features">
-          <p class="features-text">
-            ⚡ <strong>Супер возможности:</strong>
-            • Работает офлайн 📶 • Молниеносная загрузка ⚡ • Установка на устройство 📱 • Уведомления 🔔
-          </p>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -155,6 +176,27 @@
       });
     }
 
+    // Функции для меню
+    function toggleMenu() {
+      const menu = document.getElementById('sidebar-menu');
+      const overlay = document.getElementById('menu-overlay');
+      const hamburger = document.getElementById('hamburger-btn');
+      
+      menu.classList.toggle('active');
+      overlay.classList.toggle('active');
+      hamburger.classList.toggle('active');
+    }
+
+    function closeMenu() {
+      const menu = document.getElementById('sidebar-menu');
+      const overlay = document.getElementById('menu-overlay');
+      const hamburger = document.getElementById('hamburger-btn');
+      
+      menu.classList.remove('active');
+      overlay.classList.remove('active');
+      hamburger.classList.remove('active');
+    }
+
     // Обработка установки PWA
     let deferredPrompt;
     let installBtn;
@@ -174,7 +216,7 @@
     
     // Инициализация кнопки установки
     function initInstallButton() {
-      installBtn = document.getElementById('install-btn');
+      installBtn = document.getElementById('install-menu-btn');
       if (!installBtn) return;
       
       // Показываем кнопку только на мобильных устройствах и если PWA не установлено
@@ -235,7 +277,7 @@
     window.addEventListener('appinstalled', (e) => {
       console.log('🎉 PWA приложение установлено!');
       // Скрываем кнопку установки
-      const installBtn = document.getElementById('install-btn');
+      const installBtn = document.getElementById('install-menu-btn');
       if (installBtn) {
         installBtn.style.display = 'none';
       }
@@ -248,7 +290,6 @@
 
     window.addEventListener('offline', () => {
       console.log('📡 Работа в офлайн режиме');
-      // Можно показать уведомление пользователю
     });
   </script>
 </body>
