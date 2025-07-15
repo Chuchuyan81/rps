@@ -1,45 +1,48 @@
 {
   "name": "Камень, Ножницы, Бумага",
   "short_name": "RPS",
-  "description": "Многопользовательская игра Камень, Ножницы, Бумага в реальном времени",
+  "description": "Многопользовательская игра Камень, Ножницы, Бумага в реальном времени с поддержкой комнат",
   "start_url": "/",
+  "id": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#1a1a2e",
   "theme_color": "#16213e",
   "orientation": "portrait",
   "scope": "/",
   "lang": "ru",
-  "categories": ["games", "entertainment"],
+  "dir": "ltr",
+  "categories": ["games", "entertainment", "social"],
   "icons": [
     {
       "src": "icons/icon-72x72.png",
       "sizes": "72x72",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
     },
     {
       "src": "icons/icon-96x96.png",
       "sizes": "96x96",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
     },
     {
       "src": "icons/icon-128x128.png",
       "sizes": "128x128",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "maskable"
     },
     {
       "src": "icons/icon-144x144.png",
       "sizes": "144x144",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
     },
     {
       "src": "icons/icon-152x152.png",
       "sizes": "152x152",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
     },
     {
       "src": "icons/icon-192x192.png",
@@ -62,23 +65,110 @@
   ],
   "screenshots": [
     {
-      "src": "screenshots/desktop.png",
+      "src": "screenshots/desktop-wide.png",
       "sizes": "1280x720",
       "type": "image/png",
-      "form_factor": "wide"
+      "form_factor": "wide",
+      "label": "Основной экран игры на десктопе"
     },
     {
-      "src": "screenshots/mobile.png", 
+      "src": "screenshots/mobile-narrow.png", 
       "sizes": "360x640",
       "type": "image/png",
-      "form_factor": "narrow"
+      "form_factor": "narrow",
+      "label": "Мобильный интерфейс игры"
+    },
+    {
+      "src": "screenshots/game-process.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Процесс игры"
     }
   ],
+  "shortcuts": [
+    {
+      "name": "Создать комнату",
+      "short_name": "Создать",
+      "description": "Быстро создать новую игровую комнату",
+      "url": "/?action=create",
+      "icons": [
+        {
+          "src": "icons/shortcut-create.png",
+          "sizes": "96x96",
+          "type": "image/png",
+          "purpose": "any"
+        }
+      ]
+    },
+    {
+      "name": "Присоединиться к игре",
+      "short_name": "Войти",
+      "description": "Присоединиться к существующей комнате",
+      "url": "/?action=join",
+      "icons": [
+        {
+          "src": "icons/shortcut-join.png",
+          "sizes": "96x96",
+          "type": "image/png",
+          "purpose": "any"
+        }
+      ]
+    },
+    {
+      "name": "Правила игры",
+      "short_name": "Правила",
+      "description": "Посмотреть правила игры",
+      "url": "/?action=rules",
+      "icons": [
+        {
+          "src": "icons/shortcut-rules.png",
+          "sizes": "96x96",
+          "type": "image/png",
+          "purpose": "any"
+        }
+      ]
+    }
+  ],
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "file_handlers": [
+    {
+      "action": "/",
+      "accept": {
+        "text/plain": [".txt"],
+        "application/json": [".json"]
+      }
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+rps",
+      "url": "/?room=%s"
+    }
+  ],
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": "navigate-new"
+  },
+  "handle_links": "preferred",
+  "related_applications": [],
+  "prefer_related_applications": false,
   "features": [
     "Cross Platform",
     "Fast",
-    "Simple"
-  ],
-  "related_applications": [],
-  "prefer_related_applications": false
+    "Simple",
+    "Offline Support",
+    "Real-time Multiplayer"
+  ]
 } 
