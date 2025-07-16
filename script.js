@@ -546,7 +546,8 @@ function handleGameUpdate(gameData) {
 
   // Обновляем статус подключения игроков
   if (status === 'ready' && player2_id) {
-    if (gameState.gameStatus === 'waiting') {
+    console.log('🚀 Второй игрок присоединился! Предыдущий статус:', gameState.gameStatus);
+    if (gameState.gameStatus === 'waiting' || gameState.gameStatus === 'waiting_player2') {
       if (gameState.playingWithBot) {
         showStatus("Бот готов! Сделайте ваш выбор:");
       } else {
@@ -556,6 +557,7 @@ function handleGameUpdate(gameData) {
     gameState.gameStatus = 'ready';
     // Активируем кнопки для обоих игроков когда игра готова
     toggleChoiceButtons(true);
+    console.log('✅ Игра готова! Кнопки активированы. Новый статус:', gameState.gameStatus);
   }
 
   // Обрабатываем ходы
@@ -1103,7 +1105,10 @@ async function createRoom() {
       roomInput.value = room_id;
     }
     
-    showStatus(`🎉 Ваша комната создана! ID: ${room_id} 🎊 Поделитесь с друзьями!`);
+    // Показываем игровой интерфейс создателю комнаты
+    showGameUI();
+    showStatus(`🎉 Ваша комната создана! ID: ${room_id} 🎊 Ожидание второго игрока...`);
+    console.log('🏠 Комната создана, ожидание второго игрока. Статус:', gameState.gameStatus);
     subscribeToUpdates();
     
   } catch (error) {
