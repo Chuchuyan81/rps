@@ -585,7 +585,9 @@ function handleGameUpdate(gameData) {
       const opponentChoiceDisplay = gameState.isPlayer1 ? player2_choice : player1_choice;
       
       const opponentName = gameState.playingWithBot ? "Бот" : "Оппонент";
-      showStatus(`${result.message} (Вы: ${myChoiceDisplay}, ${opponentName}: ${opponentChoiceDisplay})`);
+      
+      // Показываем результат с цветовым различием и выбором соперника
+      showGameResult(result, myChoiceDisplay, opponentChoiceDisplay, opponentName);
       
       gameState.gameStatus = 'finished';
       toggleChoiceButtons(false);
@@ -1191,4 +1193,108 @@ function showLoader(show) {
       actionButton.textContent = '⏳ Загружаем...';
     }
   }
+}
+
+/**
+ * Выход из игры и возврат на главный экран
+ * Очищает состояние игры и показывает главное меню
+ */
+async function exitGame() {
+  console.log('🚪 Выход из игры...');
+  
+  try {
+    // Полная очистка состояния
+    await fullCleanup();
+    
+    // Сброс состояния игры
+    gameState.currentRoom = null;
+    gameState.playerId = null;
+    gameState.isPlayer1 = false;
+    gameState.myChoice = null;
+    gameState.opponentChoice = null;
+    gameState.gameStatus = 'idle';
+    gameState.playingWithBot = false;
+    
+    // Скрываем игровые элементы
+    const choices = document.getElementById('choices');
+    const result = document.getElementById('result');
+    const roomInput = document.getElementById('room');
+    const actionButton = document.getElementById('actionButton');
+    
+    if (choices) choices.style.display = 'none';
+    if (result) {
+      result.innerHTML = '';
+      result.className = 'result';
+    }
+    if (roomInput) {
+      roomInput.value = '';
+      roomInput.disabled = false;
+    }
+    if (actionButton) {
+      actionButton.textContent = '🚀 Создать комнату';
+      actionButton.disabled = false;
+    }
+    
+    showStatus("Добро пожаловать! Создайте комнату или присоединитесь к существующей.");
+    
+  } catch (error) {
+    console.error('Ошибка при выходе из игры:', error);
+    showStatus("Произошла ошибка при выходе из игры", true);
+  }
+}
+
+/**
+ * Показывает результат игры с цветовым различием и выбором соперника
+ * @param {Object} result - результат игры от determineWinner
+ * @param {string} myChoice - мой выбор
+ * @param {string} opponentChoice - выбор соперника
+ * @param {string} opponentName - имя соперника (Бот/Оппонент)
+ */
+function showGameResult(result, myChoice, opponentChoice, opponentName) {
+  const resultElement = document.getElementById('result');
+  if (!resultElement) return;
+  
+  // Определяем иконки для выборов
+  const choiceIcons = {
+    'камень': '🪨',
+    'ножницы': '✂️',
+    'бумага': '📄'
+  };
+  
+  // Определяем класс для цветового различия
+  let resultClass = 'result';
+  if (result.winner === 'me') {
+    resultClass += ' win';
+  } else if (result.winner === 'draw') {
+    resultClass += ' draw';
+  } else {
+    resultClass += ' lose';
+  }
+  
+  // Создаем HTML для отображения результата
+  const resultHTML = `
+    <div class="status-message">
+      <div style="font-size: 1.2rem; margin-bottom: 1rem;">
+        ${result.message}
+      </div>
+      <div class="choices-display">
+        <div class="player-choice">
+          <span class="choice-icon">${choiceIcons[myChoice]}</span>
+          <div class="choice-label">Вы: ${myChoice}</div>
+        </div>
+        <div class="player-choice">
+          <span class="choice-icon">${choiceIcons[opponentChoice]}</span>
+          <div class="choice-label">${opponentName}: ${opponentChoice}</div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  resultElement.innerHTML = resultHTML;
+  resultElement.className = resultClass;
+  
+  // Добавляем анимацию появления
+  resultElement.style.animation = 'none';
+  resultElement.offsetHeight; // Trigger reflow
+  resultElement.style.animation = 'resultPulse 0.5s ease-in-out';
 }

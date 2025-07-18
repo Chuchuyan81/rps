@@ -118,7 +118,10 @@
       </div>
 
       <div class="choices" id="choices" style="display: none;">
-        <h3>🎯 Сделайте ваш выбор!</h3>
+        <div class="game-header">
+          <h3>🎯 Сделайте ваш выбор!</h3>
+          <button class="exit-game-btn" onclick="exitGame()" title="Выйти из игры">✕</button>
+        </div>
         <div class="choice-buttons">
           <button onclick="makeMove('камень')" class="choice-btn" title="Камень побеждает ножницы!">
             🪨 Камень
