@@ -214,6 +214,10 @@ async function playWithBot() {
     console.log('🤖 Подписываемся на обновления...');
     subscribeToUpdates();
 
+    // Бот делает первый ход сразу
+    console.log('🤖 Бот делает первый ход...');
+    await makeBotMove();
+
     console.log('🤖 Подключение к боту завершено успешно!');
 
   } catch (error) {
@@ -298,15 +302,12 @@ async function ensureBotRoomExists() {
 
 /**
  * Логика бота для автоматических ходов
- * Бот делает случайный выбор через небольшую задержку
+ * Бот делает случайный выбор без задержки
  */
 async function makeBotMove() {
   if (!gameState.playingWithBot || gameState.currentRoom !== BOT_ROOM_ID) {
     return;
   }
-
-  // Задержка для реалистичности
-  await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
 
   const choices = ['камень', 'ножницы', 'бумага'];
   const botChoice = choices[Math.floor(Math.random() * choices.length)];
