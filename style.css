@@ -40,19 +40,21 @@ body::before {
 .container {
   max-width: 800px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 15px;
   display: flex;
   flex-direction: column;
   align-items: center;
   min-height: 100vh;
-  justify-content: center;
+  max-height: 100vh;
+  justify-content: flex-start;
+  overflow: hidden;
 }
 
 /* Заголовок */
 h1 {
   color: white;
-  font-size: 2.8rem;
-  margin-bottom: 2rem;
+  font-size: 2.2rem;
+  margin-bottom: 1rem;
   text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
   text-align: center;
   font-weight: 700;
@@ -68,8 +70,8 @@ h1 {
 /* Игровой контейнер */
 .game-container {
   background: rgba(255, 255, 255, 0.95);
-  border-radius: 25px;
-  padding: 2.5rem;
+  border-radius: 20px;
+  padding: 1.5rem;
   box-shadow: 
     0 25px 50px rgba(0,0,0,0.15),
     0 0 0 1px rgba(255,255,255,0.1);
@@ -80,6 +82,11 @@ h1 {
   border: 1px solid rgba(255,255,255,0.2);
   position: relative;
   overflow: hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  max-height: calc(100vh - 120px);
 }
 
 /* Добавляем блики на контейнер */
@@ -312,20 +319,21 @@ h1 {
 
 /* Результат */
 .result {
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   font-weight: 600;
-  margin: 2rem 0;
-  padding: 1.5rem;
-  border-radius: 15px;
-  min-height: 80px;
+  margin: 1rem 0;
+  padding: 1rem;
+  border-radius: 12px;
+  min-height: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border: 3px solid #e9ecef;
+  border: 2px solid #e9ecef;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .result.success {
@@ -1235,31 +1243,37 @@ h1 {
   margin-bottom: 1rem;
 }
 
-.exit-game-btn {
-  background: #dc3545;
+.game-actions {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.end-game-btn {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
   color: white;
   border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  font-size: 1.2rem;
-  font-weight: bold;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  display: flex;
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+  gap: 8px;
 }
 
-.exit-game-btn:hover {
-  background: #c82333;
-  transform: scale(1.1);
-  box-shadow: 0 6px 12px rgba(220, 53, 69, 0.4);
+.end-game-btn:hover {
+  background: linear-gradient(135deg, #c82333 0%, #a71e2a 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(220, 53, 69, 0.4);
 }
 
-.exit-game-btn:active {
-  transform: scale(0.95);
+.end-game-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
 }
 
 /* Обновленные стили результатов с цветовым различием */
@@ -1332,9 +1346,26 @@ h1 {
 
 /* Адаптивные стили для мобильных устройств */
 @media (max-width: 768px) {
+  .container {
+    padding: 10px;
+    max-height: 100vh;
+    overflow: hidden;
+  }
+  
+  .game-container {
+    padding: 1rem;
+    border-radius: 15px;
+    max-height: calc(100vh - 80px);
+  }
+  
+  h1 {
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+  }
+  
   .game-header {
     flex-direction: row;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
   }
   
@@ -1343,11 +1374,16 @@ h1 {
     font-size: 1.2rem;
   }
   
-  .exit-game-btn {
-    width: 35px;
-    height: 35px;
+  .end-game-btn {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+  }
+  
+  .result {
     font-size: 1rem;
-    flex-shrink: 0;
+    padding: 0.8rem;
+    margin: 0.5rem 0;
+    min-height: 50px;
   }
   
   .choices-display {
@@ -1384,5 +1420,42 @@ h1 {
   
   .status-message > div:first-child {
     font-size: 1rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 5px;
+  }
+  
+  .game-container {
+    padding: 0.8rem;
+    max-height: calc(100vh - 60px);
+  }
+  
+  h1 {
+    font-size: 1.5rem;
+    margin-bottom: 0.3rem;
+  }
+  
+  .choice-btn {
+    font-size: 0.9rem;
+    padding: 0.8rem;
+  }
+  
+  .end-game-btn {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+  }
+  
+  .result {
+    font-size: 0.9rem;
+    padding: 0.6rem;
+    margin: 0.3rem 0;
+    min-height: 40px;
+  }
+  
+  .game-header h3 {
+    font-size: 1rem;
   }
 }
