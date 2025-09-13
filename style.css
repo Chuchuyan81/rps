@@ -81,7 +81,7 @@ h1 {
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255,255,255,0.2);
   position: relative;
-  overflow: hidden;
+  overflow: visible; /* Изменено с hidden на visible для отображения всего контента */
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -335,16 +335,16 @@ h1 {
   padding: 0.8rem; /* Уменьшено с 1rem до 0.8rem */
   border-radius: 12px;
   min-height: 50px; /* Уменьшено с 60px до 50px */
-  max-height: 120px; /* Уменьшено с 150px до 120px */
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  /* Убираем max-height чтобы контент не обрезался */
+  display: block; /* Изменено с flex на block для лучшего отображения текста */
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   border: 2px solid #e9ecef;
   transition: all 0.3s ease;
   position: relative;
-  overflow: hidden;
+  overflow-y: auto; /* Добавляем прокрутку только по вертикали если нужно */
+  overflow-x: hidden; /* Скрываем горизонтальную прокрутку */
   flex-shrink: 0;
+  text-align: center; /* Центрируем текст */
 }
 
 .result.success {
@@ -1273,7 +1273,7 @@ h1 {
     font-size: 0.8rem;
     padding: 0.4rem;
     min-height: 35px;
-    max-height: 70px;
+    /* Убираем max-height чтобы контент не обрезался */
   }
   
   .choices-display {
@@ -1457,7 +1457,7 @@ h1 {
     padding: 0.6rem; /* Уменьшено с 0.8rem до 0.6rem */
     margin: 0;
     min-height: 45px; /* Уменьшено с 50px до 45px */
-    max-height: 100px; /* Ограничиваем высоту на мобильных */
+    /* Убираем max-height чтобы контент не обрезался */
   }
   
   .choices-display {
@@ -1491,9 +1491,68 @@ h1 {
     padding: 1rem;
     font-size: 1rem;
   }
+}
+
+.status-message > div:first-child {
+  font-size: 1rem !important;
+  line-height: 1.3; /* Улучшаем читаемость */
+}
+
+/* Специальные стили для результатов с выбором игроков */
+.status-message .choices-display {
+  margin-top: 0.8rem;
+  padding: 0.6rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.status-message .player-choice {
+  padding: 0.4rem;
+}
+
+.status-message .choice-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.3rem;
+}
+
+.status-message .choice-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* Улучшенные стили для отображения текста в результатах */
+.status-message {
+  line-height: 1.4; /* Улучшаем читаемость */
+  word-wrap: break-word; /* Переносим длинные слова */
+  overflow-wrap: break-word; /* Дополнительная поддержка переноса */
+}
+
+/* Специальные стили для результатов с анимацией */
+.result.win .status-message,
+.result.lose .status-message,
+.result.draw .status-message {
+  padding: 0.5rem 0;
+}
+
+/* Адаптивные стили для результатов на мобильных */
+@media (max-width: 768px) {
+  .status-message {
+    font-size: 0.9rem;
+    line-height: 1.3;
+  }
   
-  .status-message > div:first-child {
-    font-size: 1rem !important;
+  .status-message .choices-display {
+    margin-top: 0.6rem;
+    padding: 0.5rem;
+  }
+  
+  .status-message .choice-icon {
+    font-size: 1.3rem;
+  }
+  
+  .status-message .choice-label {
+    font-size: 0.8rem;
   }
 }
 
@@ -1505,7 +1564,7 @@ h1 {
   .game-container {
     padding: 0.8rem;
     max-height: calc(100vh - 60px);
-    gap: 0.6rem; /* Еще меньше отступы на маленьких экранах */
+    gap: 0.6rem;
   }
   
   h1 {
@@ -1518,17 +1577,33 @@ h1 {
     padding: 0.8rem;
   }
   
-  
   .result {
     font-size: 0.9rem;
-    padding: 0.5rem; /* Уменьшено с 0.6rem до 0.5rem */
+    padding: 0.5rem;
     margin: 0;
     min-height: 40px;
-    max-height: 80px; /* Ограничиваем высоту на очень маленьких экранах */
   }
   
   .game-header h3 {
     font-size: 1rem;
-    margin-bottom: 0.5rem; /* Уменьшаем отступ в заголовке */
+    margin-bottom: 0.5rem;
+  }
+  
+  .status-message {
+    font-size: 0.8rem;
+    line-height: 1.2;
+  }
+  
+  .status-message .choices-display {
+    margin-top: 0.4rem;
+    padding: 0.4rem;
+  }
+  
+  .status-message .choice-icon {
+    font-size: 1.1rem;
+  }
+  
+  .status-message .choice-label {
+    font-size: 0.75rem;
   }
 }
