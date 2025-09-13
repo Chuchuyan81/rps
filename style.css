@@ -85,9 +85,10 @@ h1 {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start; /* Изменено с space-between на flex-start */
   max-height: calc(100vh - 120px);
   min-height: 0; /* Позволяет flex элементам сжиматься */
+  gap: 1rem; /* Добавляем равномерные отступы между элементами */
 }
 
 /* Добавляем блики на контейнер */
@@ -249,14 +250,14 @@ h1 {
 
 /* Выбор ходов */
 .choices {
-  margin: 1rem 0;
+  margin: 0; /* Убираем отступы, используем gap в контейнере */
   position: relative;
   flex-shrink: 0;
   min-height: 0;
 }
 
 .choices h3 {
-  margin-bottom: 2rem;
+  margin-bottom: 1rem; /* Уменьшено с 2rem до 1rem */
   color: #333;
   font-size: 1.4rem;
   font-weight: 600;
@@ -330,11 +331,11 @@ h1 {
 .result {
   font-size: 1.2rem;
   font-weight: 600;
-  margin: 1rem 0;
-  padding: 1rem;
+  margin: 0; /* Убираем отступы, используем gap в контейнере */
+  padding: 0.8rem; /* Уменьшено с 1rem до 0.8rem */
   border-radius: 12px;
-  min-height: 60px;
-  max-height: 150px;
+  min-height: 50px; /* Уменьшено с 60px до 50px */
+  max-height: 120px; /* Уменьшено с 150px до 120px */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1244,6 +1245,49 @@ h1 {
   .menu-info p {
     font-size: 12px;
   }
+  
+  /* Дополнительная оптимизация для очень маленьких экранов */
+  .game-container {
+    padding: 0.6rem;
+    gap: 0.4rem;
+    max-height: calc(100vh - 50px);
+  }
+  
+  h1 {
+    font-size: 1.3rem;
+    margin-bottom: 0.2rem;
+  }
+  
+  .game-header h3 {
+    font-size: 0.9rem;
+    margin-bottom: 0.3rem;
+  }
+  
+  .choice-btn {
+    font-size: 0.8rem;
+    padding: 0.6rem;
+    min-width: 80px;
+  }
+  
+  .result {
+    font-size: 0.8rem;
+    padding: 0.4rem;
+    min-height: 35px;
+    max-height: 70px;
+  }
+  
+  .choices-display {
+    padding: 0.5rem;
+    margin: 0.3rem 0;
+  }
+  
+  .player-choice .choice-icon {
+    font-size: 1.2rem;
+  }
+  
+  .player-choice .choice-label {
+    font-size: 0.8rem;
+  }
 }
 
 /* Игровой заголовок с крестиком */
@@ -1344,8 +1388,8 @@ h1 {
 .choices-display {
   display: flex;
   justify-content: space-around;
-  margin: 1rem 0;
-  padding: 1rem;
+  margin: 0.5rem 0; /* Уменьшено с 1rem до 0.5rem */
+  padding: 0.8rem; /* Уменьшено с 1rem до 0.8rem */
   background: rgba(255, 255, 255, 0.1);
   border-radius: 10px;
   border: 2px solid rgba(255, 255, 255, 0.2);
@@ -1380,6 +1424,7 @@ h1 {
     padding: 1rem;
     border-radius: 15px;
     max-height: calc(100vh - 80px);
+    gap: 0.8rem; /* Уменьшаем отступы на мобильных */
   }
   
   h1 {
@@ -1397,7 +1442,7 @@ h1 {
   
   .game-header h3 {
     margin: 0;
-    font-size: 1.2rem;
+    font-size: 1.1rem; /* Уменьшено с 1.2rem до 1.1rem */
   }
   
   .close-game-btn {
@@ -1408,10 +1453,11 @@ h1 {
   
   
   .result {
-    font-size: 1rem;
-    padding: 0.8rem;
-    margin: 0.5rem 0;
-    min-height: 50px;
+    font-size: 0.95rem; /* Уменьшено с 1rem до 0.95rem */
+    padding: 0.6rem; /* Уменьшено с 0.8rem до 0.6rem */
+    margin: 0;
+    min-height: 45px; /* Уменьшено с 50px до 45px */
+    max-height: 100px; /* Ограничиваем высоту на мобильных */
   }
   
   .choices-display {
@@ -1459,6 +1505,7 @@ h1 {
   .game-container {
     padding: 0.8rem;
     max-height: calc(100vh - 60px);
+    gap: 0.6rem; /* Еще меньше отступы на маленьких экранах */
   }
   
   h1 {
@@ -1474,12 +1521,14 @@ h1 {
   
   .result {
     font-size: 0.9rem;
-    padding: 0.6rem;
-    margin: 0.3rem 0;
+    padding: 0.5rem; /* Уменьшено с 0.6rem до 0.5rem */
+    margin: 0;
     min-height: 40px;
+    max-height: 80px; /* Ограничиваем высоту на очень маленьких экранах */
   }
   
   .game-header h3 {
     font-size: 1rem;
+    margin-bottom: 0.5rem; /* Уменьшаем отступ в заголовке */
   }
 }
