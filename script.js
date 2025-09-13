@@ -337,17 +337,18 @@ async function makeBotMove() {
 // Отображение кнопок выбора
 function showGameUI() {
   const choices = document.getElementById("choices");
-  const roomInput = document.getElementById("room");
+  const roomControls = document.querySelector(".room-controls");
   const actionButton = document.getElementById("actionButton");
 
   if (choices) choices.style.display = "block";
-  if (roomInput) roomInput.disabled = true;
+  
+  // Скрываем поле комнаты во время игры
+  if (roomControls) {
+    roomControls.classList.add("hidden");
+  }
+  
   if (actionButton) {
-    actionButton.style.display = "block";
-    actionButton.textContent = "Закончить игру";
-    // Убираем старый обработчик и добавляем новый
-    actionButton.onclick = null;
-    actionButton.onclick = () => fullCleanup();
+    actionButton.style.display = "none"; // Скрываем кнопку действия во время игры
   }
 
   // Активируем кнопки если игра готова (особенно важно для игрока 2)
@@ -677,10 +678,17 @@ async function fullCleanup() {
 
   // Сброс UI
   const choices = document.getElementById("choices");
+  const roomControls = document.querySelector(".room-controls");
   const roomInput = document.getElementById("room");
   const actionButton = document.getElementById("actionButton");
 
   if (choices) choices.style.display = "none";
+  
+  // Показываем поле комнаты обратно
+  if (roomControls) {
+    roomControls.classList.remove("hidden");
+  }
+  
   if (roomInput) {
     roomInput.disabled = false;
     roomInput.value = "";
@@ -1219,6 +1227,7 @@ async function exitGame() {
     // Скрываем игровые элементы
     const choices = document.getElementById('choices');
     const result = document.getElementById('result');
+    const roomControls = document.querySelector('.room-controls');
     const roomInput = document.getElementById('room');
     const actionButton = document.getElementById('actionButton');
     
@@ -1227,11 +1236,18 @@ async function exitGame() {
       result.innerHTML = '';
       result.className = 'result';
     }
+    
+    // Показываем поле комнаты обратно
+    if (roomControls) {
+      roomControls.classList.remove('hidden');
+    }
+    
     if (roomInput) {
       roomInput.value = '';
       roomInput.disabled = false;
     }
     if (actionButton) {
+      actionButton.style.display = 'block';
       actionButton.textContent = '🚀 Создать комнату';
       actionButton.disabled = false;
     }

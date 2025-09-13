@@ -120,6 +120,9 @@
       <div class="choices" id="choices" style="display: none;">
         <div class="game-header">
           <h3>🎯 Сделайте ваш выбор!</h3>
+          <button class="close-game-btn" onclick="exitGame()" title="Завершить игру" aria-label="Завершить игру">
+            ✕
+          </button>
         </div>
         <div class="choice-buttons">
           <button onclick="makeMove('камень')" class="choice-btn" title="Камень побеждает ножницы!">
@@ -130,11 +133,6 @@
           </button>
           <button onclick="makeMove('бумага')" class="choice-btn" title="Бумага побеждает камень!">
             📄 Бумага
-          </button>
-        </div>
-        <div class="game-actions">
-          <button class="end-game-btn" onclick="exitGame()" title="Завершить игру">
-            🚪 Завершить игру
           </button>
         </div>
       </div>

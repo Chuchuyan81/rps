@@ -87,6 +87,7 @@ h1 {
   flex-direction: column;
   justify-content: space-between;
   max-height: calc(100vh - 120px);
+  min-height: 0; /* Позволяет flex элементам сжиматься */
 }
 
 /* Добавляем блики на контейнер */
@@ -109,6 +110,12 @@ h1 {
 /* Контролы комнаты */
 .room-controls {
   margin-bottom: 2rem;
+  transition: all 0.3s ease;
+}
+
+/* Скрытие поля комнаты во время игры */
+.room-controls.hidden {
+  display: none;
 }
 
 #room {
@@ -242,8 +249,10 @@ h1 {
 
 /* Выбор ходов */
 .choices {
-  margin: 2rem 0;
+  margin: 1rem 0;
   position: relative;
+  flex-shrink: 0;
+  min-height: 0;
 }
 
 .choices h3 {
@@ -325,6 +334,7 @@ h1 {
   padding: 1rem;
   border-radius: 12px;
   min-height: 60px;
+  max-height: 150px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -827,6 +837,7 @@ h1 {
   
   .install-btn {
     -webkit-appearance: none;
+    appearance: none;
     -webkit-touch-callout: none;
   }
 }
@@ -1241,39 +1252,52 @@ h1 {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
+  position: relative;
 }
 
-.game-actions {
-  margin-top: 1.5rem;
+.game-header h3 {
+  margin: 0;
+  flex: 1;
   text-align: center;
 }
 
-.end-game-btn {
-  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-  color: white;
-  border: none;
-  border-radius: 12px;
-  padding: 12px 24px;
-  font-size: 1rem;
+/* Кнопка закрытия игры в виде крестика */
+.close-game-btn {
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
 }
 
-.end-game-btn:hover {
-  background: linear-gradient(135deg, #c82333 0%, #a71e2a 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(220, 53, 69, 0.4);
-}
-
-.end-game-btn:active {
-  transform: translateY(0);
+.close-game-btn:hover {
+  background: rgba(220, 53, 69, 0.2);
+  border-color: rgba(220, 53, 69, 0.5);
+  transform: translateY(-50%) scale(1.1);
   box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+.close-game-btn:active {
+  transform: translateY(-50%) scale(0.95);
+  background: rgba(220, 53, 69, 0.3);
+}
+
+.close-game-btn:focus-visible {
+  outline: 2px solid #dc3545;
+  outline-offset: 2px;
 }
 
 /* Обновленные стили результатов с цветовым различием */
@@ -1367,6 +1391,8 @@ h1 {
     flex-direction: row;
     justify-content: center;
     align-items: center;
+    position: relative;
+    padding-right: 40px; /* Место для крестика */
   }
   
   .game-header h3 {
@@ -1374,10 +1400,12 @@ h1 {
     font-size: 1.2rem;
   }
   
-  .end-game-btn {
-    padding: 10px 20px;
-    font-size: 0.9rem;
+  .close-game-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
   }
+  
   
   .result {
     font-size: 1rem;
@@ -1443,10 +1471,6 @@ h1 {
     padding: 0.8rem;
   }
   
-  .end-game-btn {
-    padding: 8px 16px;
-    font-size: 0.8rem;
-  }
   
   .result {
     font-size: 0.9rem;
