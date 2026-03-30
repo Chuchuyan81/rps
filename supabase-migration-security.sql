@@ -1,32 +1,12 @@
--- Схема игры RPS с Row Level Security и RPC (без открытого DML для anon).
---
--- ВАЖНО: в Dashboard Supabase включите Anonymous sign-ins:
--- Authentication → Providers → Anonymous → Enable
---
--- После изменений: SQL Editor → выполнить этот файл (или раздел миграции на существующей БД).
+-- Миграция с открытой политики RLS на RPC + участники.
+-- Выполните в SQL Editor Supabase, если таблица games уже существует (без DROP).
+-- Предварительно включите Anonymous sign-ins в Authentication → Providers.
 
--- Удаляем старую таблицу если существует (осторожно в продакшене!)
-DROP TABLE IF EXISTS games CASCADE;
-
-CREATE TABLE games (
-    id BIGSERIAL PRIMARY KEY,
-    room_id TEXT NOT NULL UNIQUE,
-    player1_id TEXT,
-    player2_id TEXT,
-    player1_choice TEXT CHECK (player1_choice IN ('камень', 'ножницы', 'бумага')),
-    player2_choice TEXT CHECK (player2_choice IN ('камень', 'ножницы', 'бумага')),
-    status TEXT NOT NULL DEFAULT 'waiting_player2' CHECK (status IN ('waiting_player2', 'ready', 'playing', 'finished')),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE INDEX idx_games_room_id ON games(room_id);
-CREATE INDEX idx_games_status ON games(status);
-CREATE INDEX idx_games_created_at ON games(created_at);
+DROP POLICY IF EXISTS "Allow all operations on games" ON games;
+DROP POLICY IF EXISTS "games_select_if_participant" ON games;
 
 ALTER TABLE games ENABLE ROW LEVEL SECURITY;
 
--- Только участники видят строку (нужно для Realtime postgres_changes)
 CREATE POLICY "games_select_if_participant" ON games
   FOR SELECT TO authenticated
   USING (
@@ -34,15 +14,12 @@ CREATE POLICY "games_select_if_participant" ON games
     OR auth.uid()::text = player2_id
   );
 
--- Прямые INSERT/UPDATE/DELETE с клиента запрещены — только RPC (SECURITY DEFINER)
-
 REVOKE ALL ON TABLE games FROM PUBLIC;
 REVOKE ALL ON TABLE games FROM anon;
 REVOKE ALL ON TABLE games FROM authenticated;
 GRANT SELECT ON TABLE games TO authenticated;
 
--- ---------- Вспомогательные функции ----------
-
+-- Функции (CREATE OR REPLACE — безопасно повторять)
 CREATE OR REPLACE FUNCTION public.rps_health()
 RETURNS jsonb
 LANGUAGE sql
@@ -56,7 +33,6 @@ AS $$
   END;
 $$;
 
--- Создание комнаты: player1 = текущий пользователь (UUID из Anonymous Auth)
 CREATE OR REPLACE FUNCTION public.create_rps_room()
 RETURNS games
 LANGUAGE plpgsql
@@ -90,7 +66,6 @@ BEGIN
 END;
 $$;
 
--- Присоединение к комнате (room_id: 4 цифры или '9999' для бота)
 CREATE OR REPLACE FUNCTION public.join_rps_room(p_room_id text)
 RETURNS games
 LANGUAGE plpgsql
@@ -322,35 +297,6 @@ BEGIN
 END;
 $$;
 
--- Триггер updated_at
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER update_games_updated_at
-  BEFORE UPDATE ON games
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-
-CREATE OR REPLACE FUNCTION cleanup_old_games()
-RETURNS void AS $$
-BEGIN
-  DELETE FROM games
-  WHERE created_at < NOW() - INTERVAL '24 hours'
-    AND room_id <> '9999';
-END;
-$$ LANGUAGE plpgsql;
-
-COMMENT ON TABLE games IS 'Игровые сессии RPS; доступ через RPC и SELECT для участников';
-
--- Realtime
-ALTER PUBLICATION supabase_realtime ADD TABLE games;
-
--- Права на RPC
 GRANT EXECUTE ON FUNCTION public.rps_health() TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.create_rps_room() TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.join_rps_room(text) TO anon, authenticated;
