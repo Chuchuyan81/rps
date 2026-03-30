@@ -8,7 +8,7 @@
   <meta name="author" content="RPS Game" />
   
   <!-- PWA метаданные -->
-  <meta name="theme-color" content="#16213e" />
+  <meta name="theme-color" content="#667eea" id="meta-theme-color" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -50,6 +50,14 @@
   
   <!-- Стили -->
   <link rel="stylesheet" href="style.css" />
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('rps-ui-theme');
+        if (t && t !== 'standard') document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
   <!-- Гамбургер меню кнопка -->
@@ -67,6 +75,13 @@
     </div>
     
     <div class="menu-content">
+      <div class="menu-section">
+        <h4>🎨 Оформление</h4>
+        <button type="button" class="menu-btn" onclick="openThemeModal();">
+          🎨 Сменить оформление
+        </button>
+      </div>
+
       <div class="menu-section">
         <h4>🎮 Режимы игры</h4>
         <button id="botMenuButton" onclick="playWithBot(); closeMenu();" class="menu-btn">
@@ -96,6 +111,69 @@
 
   <!-- Затемнение для меню -->
   <div class="menu-overlay" id="menu-overlay" onclick="closeMenu()"></div>
+
+  <!-- Выбор темы оформления -->
+  <div class="theme-modal" id="theme-modal" role="dialog" aria-modal="true" aria-labelledby="theme-modal-title" aria-hidden="true">
+    <div class="theme-modal__backdrop" onclick="closeThemeModal()" aria-hidden="true"></div>
+    <div class="theme-modal__panel">
+      <div class="theme-modal__header">
+        <h2 id="theme-modal-title">Сменить оформление</h2>
+        <button type="button" class="theme-modal__close" onclick="closeThemeModal()" aria-label="Закрыть">✕</button>
+      </div>
+      <div class="theme-modal__body">
+        <p class="theme-modal__intro">Выберите одну из 11 тем. Интерфейс обновится сразу, выбор сохранится для следующих визитов.</p>
+        <div class="theme-modal__grid">
+          <button type="button" class="theme-card" data-theme-id="standard" onclick="applyTheme('standard')">
+            <span class="theme-card__swatch" style="background:linear-gradient(135deg,#667eea,#764ba2,#ff9a9e)"></span>
+            <span class="theme-card__body"><span class="theme-card__title">Стандартная</span></span>
+          </button>
+          <button type="button" class="theme-card" data-theme-id="neon" onclick="applyTheme('neon')">
+            <span class="theme-card__swatch" style="background:linear-gradient(135deg,#0a0a2a,#ff00ff,#00ffff)"></span>
+            <span class="theme-card__body"><span class="theme-card__title">🌙 Неоновая синематика</span></span>
+          </button>
+          <button type="button" class="theme-card" data-theme-id="nature" onclick="applyTheme('nature')">
+            <span class="theme-card__swatch" style="background:linear-gradient(135deg,#2c3e2f,#9bcd6c,#e67e22)"></span>
+            <span class="theme-card__body"><span class="theme-card__title">🍃 Природная гармония</span></span>
+          </button>
+          <button type="button" class="theme-card" data-theme-id="pastel" onclick="applyTheme('pastel')">
+            <span class="theme-card__swatch" style="background:linear-gradient(135deg,#f8f0fc,#a3d8d4,#f4acb7)"></span>
+            <span class="theme-card__body"><span class="theme-card__title">🧁 Пастельная мечта</span></span>
+          </button>
+          <button type="button" class="theme-card" data-theme-id="grunge" onclick="applyTheme('grunge')">
+            <span class="theme-card__swatch" style="background:linear-gradient(135deg,#1a0f0a,#b22234,#4a4e69)"></span>
+            <span class="theme-card__body"><span class="theme-card__title">🔥 Агрессивный гранж</span></span>
+          </button>
+          <button type="button" class="theme-card" data-theme-id="arctic" onclick="applyTheme('arctic')">
+            <span class="theme-card__swatch" style="background:linear-gradient(135deg,#eef2f5,#4ea8de,#9ec8e0)"></span>
+            <span class="theme-card__body"><span class="theme-card__title">🧊 Арктический холод</span></span>
+          </button>
+          <button type="button" class="theme-card" data-theme-id="vintage" onclick="applyTheme('vintage')">
+            <span class="theme-card__swatch" style="background:linear-gradient(135deg,#f5e7d9,#b76e6e,#d4af37)"></span>
+            <span class="theme-card__body"><span class="theme-card__title">🕰️ Винтажный стиль</span></span>
+          </button>
+          <button type="button" class="theme-card" data-theme-id="cosmos" onclick="applyTheme('cosmos')">
+            <span class="theme-card__swatch" style="background:linear-gradient(135deg,#030518,#4b9cd3,#9b59b6)"></span>
+            <span class="theme-card__body"><span class="theme-card__title">🚀 Космическая одиссея</span></span>
+          </button>
+          <button type="button" class="theme-card" data-theme-id="candy" onclick="applyTheme('candy')">
+            <span class="theme-card__swatch" style="background:linear-gradient(135deg,#ffe082,#f06292,#4fc3f7)"></span>
+            <span class="theme-card__body"><span class="theme-card__title">🍬 Кэнди-поп</span></span>
+          </button>
+          <button type="button" class="theme-card" data-theme-id="espresso" onclick="applyTheme('espresso')">
+            <span class="theme-card__swatch" style="background:linear-gradient(135deg,#121212,#b87c4f,#8d6e63)"></span>
+            <span class="theme-card__body"><span class="theme-card__title">🧘 Минимализм эспрессо</span></span>
+          </button>
+          <button type="button" class="theme-card" data-theme-id="watercolor" onclick="applyTheme('watercolor')">
+            <span class="theme-card__swatch" style="background:linear-gradient(135deg,#fff0f5,#b8e1fc,#fbc8d5)"></span>
+            <span class="theme-card__body"><span class="theme-card__title">🎨 Акварельная абстракция</span></span>
+          </button>
+        </div>
+      </div>
+      <div class="theme-modal__footer">
+        <button type="button" class="theme-modal__dismiss" onclick="closeThemeModal()">Закрыть</button>
+      </div>
+    </div>
+  </div>
 
   <div class="container">
     <h1>🎮 Камень, Ножницы, Бумага</h1>
@@ -337,8 +415,16 @@
     
     // Инициализация PWA функций
     document.addEventListener('DOMContentLoaded', () => {
+      syncThemeMetaColor();
       initWebShare();
       handleShortcuts();
+    });
+
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape') {
+        var modal = document.getElementById('theme-modal');
+        if (modal && modal.classList.contains('active')) closeThemeModal();
+      }
     });
 
     // Функции для меню
@@ -360,6 +446,65 @@
       menu.classList.remove('active');
       overlay.classList.remove('active');
       hamburger.classList.remove('active');
+    }
+
+    var RPS_THEME_KEY = 'rps-ui-theme';
+    var RPS_THEME_COLORS = {
+      standard: '#667eea',
+      neon: '#0a0a2a',
+      nature: '#2c3e2f',
+      pastel: '#f4acb7',
+      grunge: '#1a0f0a',
+      arctic: '#4ea8de',
+      vintage: '#b76e6e',
+      cosmos: '#030518',
+      candy: '#f06292',
+      espresso: '#121212',
+      watercolor: '#ee9ca7'
+    };
+
+    function applyTheme(id) {
+      var themeId = id && Object.prototype.hasOwnProperty.call(RPS_THEME_COLORS, id) ? id : 'standard';
+      try {
+        if (themeId === 'standard') {
+          document.documentElement.removeAttribute('data-theme');
+          localStorage.setItem(RPS_THEME_KEY, 'standard');
+        } else {
+          document.documentElement.setAttribute('data-theme', themeId);
+          localStorage.setItem(RPS_THEME_KEY, themeId);
+        }
+      } catch (err) {
+        console.warn('Тема: не удалось сохранить в localStorage', err);
+      }
+      var meta = document.getElementById('meta-theme-color');
+      if (meta) meta.setAttribute('content', RPS_THEME_COLORS[themeId] || RPS_THEME_COLORS.standard);
+      closeThemeModal();
+    }
+
+    function openThemeModal() {
+      closeMenu();
+      var modal = document.getElementById('theme-modal');
+      if (!modal) return;
+      modal.classList.add('active');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeThemeModal() {
+      var modal = document.getElementById('theme-modal');
+      if (!modal) return;
+      modal.classList.remove('active');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+
+    function syncThemeMetaColor() {
+      var t = 'standard';
+      try {
+        t = localStorage.getItem(RPS_THEME_KEY) || 'standard';
+      } catch (e) {}
+      var meta = document.getElementById('meta-theme-color');
+      if (meta) meta.setAttribute('content', RPS_THEME_COLORS[t] || RPS_THEME_COLORS.standard);
     }
 
     // Обработка установки PWA
