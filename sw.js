@@ -4,21 +4,24 @@
  * Поддерживает расширенные возможности кэширования, Background Sync, Push уведомления
  */
 
-const CACHE_NAME = 'rps-game-v2.0.0';
-const STATIC_CACHE = 'rps-static-v2.0.0';
-const DYNAMIC_CACHE = 'rps-dynamic-v2.0.0';
-const IMAGE_CACHE = 'rps-images-v2.0.0';
+const CACHE_NAME = 'rps-game-v2.0.1';
+const STATIC_CACHE = 'rps-static-v2.0.1';
+const DYNAMIC_CACHE = 'rps-dynamic-v2.0.1';
+const IMAGE_CACHE = 'rps-images-v2.0.1';
+
+/** Каталог приложения: корень сайта или подпуть (например /rps/ на GitHub Pages) */
+const BASE_PATH = new URL('./', self.location.href).pathname;
 
 const STATIC_URLS = [
-  '/',
-  '/index.html',
-  '/script.js',
-  '/style.css',
-  '/manifest.json',
-  '/debug.html',
-  '/test-room-logic.html',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png'
+  BASE_PATH,
+  BASE_PATH + 'index.html',
+  BASE_PATH + 'script.js',
+  BASE_PATH + 'style.css',
+  BASE_PATH + 'manifest.json',
+  BASE_PATH + 'debug.html',
+  BASE_PATH + 'test-room-logic.html',
+  BASE_PATH + 'icons/icon-192x192.png',
+  BASE_PATH + 'icons/icon-512x512.png'
 ];
 
 const DYNAMIC_URLS = [
@@ -246,7 +249,9 @@ async function staleWhileRevalidate(request) {
 async function handleOffline(request) {
   // Для навигационных запросов показываем основную страницу
   if (request.mode === 'navigate') {
-    const cachedResponse = await caches.match('/index.html');
+    const cachedResponse =
+      (await caches.match(BASE_PATH + 'index.html')) ||
+      (await caches.match(BASE_PATH));
     if (cachedResponse) {
       return cachedResponse;
     }
@@ -324,11 +329,14 @@ async function syncGameMoves() {
 self.addEventListener('push', (event) => {
   console.log('📱 Push уведомление получено');
   
+  const scopeBase = self.registration.scope.replace(/\/?$/, '/');
+  const icon = (name) => new URL(name, scopeBase).href;
+
   let notificationData = {
     title: 'Камень, Ножницы, Бумага',
     body: 'Новое уведомление от игры!',
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-72x72.png',
+    icon: icon('icons/icon-192x192.png'),
+    badge: icon('icons/icon-72x72.png'),
     tag: 'rps-notification',
     renotify: true,
     requireInteraction: false,
@@ -336,12 +344,12 @@ self.addEventListener('push', (event) => {
       {
         action: 'open',
         title: 'Открыть игру',
-        icon: '/icons/icon-96x96.png'
+        icon: icon('icons/icon-96x96.png')
       },
       {
         action: 'close',
         title: 'Закрыть',
-        icon: '/icons/icon-96x96.png'
+        icon: icon('icons/icon-96x96.png')
       }
     ],
     data: {
@@ -372,9 +380,8 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   
   if (event.action === 'open' || !event.action) {
-    event.waitUntil(
-      clients.openWindow('/')
-    );
+    const openUrl = self.registration.scope.replace(/\/?$/, '/');
+    event.waitUntil(clients.openWindow(openUrl));
   }
 });
 

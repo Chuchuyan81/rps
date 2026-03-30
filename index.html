@@ -21,33 +21,32 @@
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Камень, Ножницы, Бумага - Онлайн игра" />
   <meta property="og:description" content="Многопользовательская игра в реальном времени. Создавайте комнаты и играйте с друзьями!" />
-  <meta property="og:image" content="/icons/icon-512x512.png" />
-  <meta property="og:url" content="/" />
+  <meta property="og:image" content="icons/icon-512x512.png" />
   <meta property="og:site_name" content="RPS Game" />
   
   <!-- Twitter метаданные -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Камень, Ножницы, Бумага" />
   <meta name="twitter:description" content="Многопользовательская игра в реальном времени" />
-  <meta name="twitter:image" content="/icons/icon-512x512.png" />
+  <meta name="twitter:image" content="icons/icon-512x512.png" />
   
   <title>🎉 Камень, Ножницы, Бумага - Веселая PWA Игра ✨</title>
   
   <!-- PWA манифест -->
-  <link rel="manifest" href="/manifest.json" />
+  <link rel="manifest" href="manifest.json" />
   
   <!-- Иконки для разных устройств -->
-  <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180x180.png" />
-  <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
-  <link rel="apple-touch-icon" sizes="144x144" href="/icons/icon-144x144.png" />
-  <link rel="apple-touch-icon" sizes="120x120" href="/icons/icon-120x120.png" />
-  <link rel="apple-touch-icon" sizes="114x114" href="/icons/icon-114x114.png" />
-  <link rel="apple-touch-icon" sizes="76x76" href="/icons/icon-76x76.png" />
-  <link rel="apple-touch-icon" sizes="72x72" href="/icons/icon-72x72.png" />
-  <link rel="apple-touch-icon" sizes="60x60" href="/icons/icon-60x60.png" />
-  <link rel="apple-touch-icon" sizes="57x57" href="/icons/icon-57x57.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180x180.png" />
+  <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152x152.png" />
+  <link rel="apple-touch-icon" sizes="144x144" href="icons/icon-144x144.png" />
+  <link rel="apple-touch-icon" sizes="120x120" href="icons/icon-120x120.png" />
+  <link rel="apple-touch-icon" sizes="114x114" href="icons/icon-114x114.png" />
+  <link rel="apple-touch-icon" sizes="76x76" href="icons/icon-76x76.png" />
+  <link rel="apple-touch-icon" sizes="72x72" href="icons/icon-72x72.png" />
+  <link rel="apple-touch-icon" sizes="60x60" href="icons/icon-60x60.png" />
+  <link rel="apple-touch-icon" sizes="57x57" href="icons/icon-57x57.png" />
   
   <!-- Стили -->
   <link rel="stylesheet" href="style.css" />
@@ -151,7 +150,19 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const registration = await navigator.serviceWorker.register('/sw.js');
+          const appBasePath = (() => {
+            let p = window.location.pathname;
+            if (/\/index\.html?$/i.test(p)) {
+              p = p.replace(/\/index\.html?$/i, '/');
+            } else if (!p.endsWith('/')) {
+              p += '/';
+            }
+            return p;
+          })();
+          const registration = await navigator.serviceWorker.register(
+            appBasePath + 'sw.js',
+            { scope: appBasePath }
+          );
           console.log('✅ Service Worker v2.0.0 зарегистрирован:', registration.scope);
           
           // Обработка обновлений SW

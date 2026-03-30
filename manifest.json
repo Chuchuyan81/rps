@@ -2,14 +2,14 @@
   "name": "Камень, Ножницы, Бумага",
   "short_name": "RPS",
   "description": "Многопользовательская игра Камень, Ножницы, Бумага в реальном времени с поддержкой комнат",
-  "start_url": "/",
-  "id": "/",
+  "start_url": "./",
+  "id": "./",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#1a1a2e",
   "theme_color": "#16213e",
   "orientation": "portrait",
-  "scope": "/",
+  "scope": "./",
   "lang": "ru",
   "dir": "ltr",
   "categories": ["games", "entertainment", "social"],
@@ -91,7 +91,7 @@
       "name": "Создать комнату",
       "short_name": "Создать",
       "description": "Быстро создать новую игровую комнату",
-      "url": "/?action=create",
+      "url": "./?action=create",
       "icons": [
         {
           "src": "icons/shortcut-create.png",
@@ -105,7 +105,7 @@
       "name": "Присоединиться к игре",
       "short_name": "Войти",
       "description": "Присоединиться к существующей комнате",
-      "url": "/?action=join",
+      "url": "./?action=join",
       "icons": [
         {
           "src": "icons/shortcut-join.png",
@@ -119,7 +119,7 @@
       "name": "Правила игры",
       "short_name": "Правила",
       "description": "Посмотреть правила игры",
-      "url": "/?action=rules",
+      "url": "./?action=rules",
       "icons": [
         {
           "src": "icons/shortcut-rules.png",
@@ -131,7 +131,7 @@
     }
   ],
   "share_target": {
-    "action": "/",
+    "action": "./",
     "method": "GET",
     "enctype": "application/x-www-form-urlencoded",
     "params": {
@@ -142,7 +142,7 @@
   },
   "file_handlers": [
     {
-      "action": "/",
+      "action": "./",
       "accept": {
         "text/plain": [".txt"],
         "application/json": [".json"]
@@ -152,7 +152,7 @@
   "protocol_handlers": [
     {
       "protocol": "web+rps",
-      "url": "/?room=%s"
+      "url": "./?room=%s"
     }
   ],
   "edge_side_panel": {
