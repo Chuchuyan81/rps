@@ -4,10 +4,10 @@
  * Поддерживает расширенные возможности кэширования, Background Sync, Push уведомления
  */
 
-const CACHE_NAME = 'rps-game-v2.0.1';
-const STATIC_CACHE = 'rps-static-v2.0.1';
-const DYNAMIC_CACHE = 'rps-dynamic-v2.0.1';
-const IMAGE_CACHE = 'rps-images-v2.0.1';
+const CACHE_NAME = 'rps-game-v2.0.2';
+const STATIC_CACHE = 'rps-static-v2.0.2';
+const DYNAMIC_CACHE = 'rps-dynamic-v2.0.2';
+const IMAGE_CACHE = 'rps-images-v2.0.2';
 
 /** Каталог приложения: корень сайта или подпуть (например /rps/ на GitHub Pages) */
 const BASE_PATH = new URL('./', self.location.href).pathname;
@@ -40,7 +40,7 @@ const CACHE_STRATEGIES = {
 
 // Установка Service Worker
 self.addEventListener('install', (event) => {
-  console.log('🔧 Service Worker v2.0.0: Установка');
+  console.log('🔧 Service Worker v2.0.2: Установка');
   
   event.waitUntil(
     Promise.all([
@@ -69,7 +69,7 @@ self.addEventListener('install', (event) => {
 
 // Активация Service Worker
 self.addEventListener('activate', (event) => {
-  console.log('🚀 Service Worker v2.0.0: Активация');
+  console.log('🚀 Service Worker v2.0.2: Активация');
   
   event.waitUntil(
     Promise.all([
@@ -91,7 +91,7 @@ self.addEventListener('activate', (event) => {
       self.clients.claim()
     ])
     .then(() => {
-      console.log('✅ Service Worker v2.0.0 активирован');
+      console.log('✅ Service Worker v2.0.2 активирован');
     })
   );
 });
