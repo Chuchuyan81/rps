@@ -203,13 +203,21 @@
         </div>
         <div class="choice-buttons">
           <button onclick="makeMove('камень')" class="choice-btn" title="Камень побеждает ножницы!">
-            🪨 Камень
+            <span class="choice-btn-icon" aria-hidden="true">
+              <svg class="rps-rock-icon" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" focusable="false">
+                <path d="M20 48c-8 0-12-6-10-14l4-18c2-6 8-10 16-10h8c10 0 18 6 20 16l2 12c1 8-6 16-16 16H20z" fill="#8a8680" stroke="#5a5650" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M24 36l8-4 12 2" stroke="#6a6660" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.65"/>
+              </svg>
+            </span>
+            <span class="choice-btn-label">Камень</span>
           </button>
           <button onclick="makeMove('ножницы')" class="choice-btn" title="Ножницы побеждают бумагу!">
-            ✂️ Ножницы
+            <span class="choice-btn-icon" aria-hidden="true"><span class="choice-btn-emoji">✂️</span></span>
+            <span class="choice-btn-label">Ножницы</span>
           </button>
           <button onclick="makeMove('бумага')" class="choice-btn" title="Бумага побеждает камень!">
-            📄 Бумага
+            <span class="choice-btn-icon" aria-hidden="true"><span class="choice-btn-emoji">📄</span></span>
+            <span class="choice-btn-label">Бумага</span>
           </button>
         </div>
       </div>
@@ -406,7 +414,7 @@
           case 'rules':
             // Показываем правила
             setTimeout(() => {
-              alert('Правила игры:\n🪨 Камень побеждает ножницы\n✂️ Ножницы побеждают бумагу\n📄 Бумага побеждает камень');
+              alert('Правила игры:\n• Камень побеждает ножницы\n• Ножницы побеждают бумагу\n• Бумага побеждает камень');
             }, 1000);
             break;
         }

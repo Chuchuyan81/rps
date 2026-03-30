@@ -1271,8 +1271,13 @@ function showGameResult(result, myChoice, opponentChoice, opponentName) {
   if (!resultElement) return;
   
   // Определяем иконки для выборов
+  const rockSvg =
+    '<svg class="rps-rock-icon" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' +
+    '<path d="M20 48c-8 0-12-6-10-14l4-18c2-6 8-10 16-10h8c10 0 18 6 20 16l2 12c1 8-6 16-16 16H20z" fill="#8a8680" stroke="#5a5650" stroke-width="2" stroke-linejoin="round"/>' +
+    '<path d="M24 36l8-4 12 2" stroke="#6a6660" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.65"/>' +
+    '</svg>';
   const choiceIcons = {
-    'камень': '🪨',
+    'камень': rockSvg,
     'ножницы': '✂️',
     'бумага': '📄'
   };
