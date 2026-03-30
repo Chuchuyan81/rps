@@ -1,6 +1,6 @@
 // Правильная инициализация Supabase
-const supabaseUrl = "https://kdbbyqsdmucjvsatbiog.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkYmJ5cXNkbXVjanZzYXRiaW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0MzQxNzcsImV4cCI6MjA2NjAxMDE3N30.v6wR9s1zCyYL-xN2Rohoi35LJ-f1uA1Y5KPPjQoXhLU";
+const supabaseUrl = "https://cchbitomcbuczxwxjobw.supabase.co";
+const supabaseKey = "sb_publishable_cBZoHPWOyuMvv2byGoDxfw_h1bNou9G";
 
 // Константы для бот-комнаты
 const BOT_ROOM_ID = '9999';
