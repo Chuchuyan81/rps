@@ -1,4 +1,23 @@
-# Локальные дампы БД и storage
-db_cluster-10-08-2025@22-38-03.backup
-db_cluster-10-08-2025@22-38-03.backup.gz
-kdbbyqsdmucjvsatbiog.storage.zip
+# Игнорируемые файлы и папки
+/archive/
+
+# Конфигурации IDE
+.cursor/
+.vscode/
+.cursorrules
+
+# Локальные файлы (если остались вне archive)
+db_cluster-*.backup
+db_cluster-*.backup.gz
+*.storage.zip
+debug.html
+test-room-logic.html
+*.sql
+*.md
+!index.html
+!README.md
+!script.js
+!style.css
+!sw.js
+!manifest.json
+!icons/
