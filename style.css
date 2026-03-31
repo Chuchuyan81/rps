@@ -500,7 +500,7 @@ body {
   overflow-x: hidden;
 }
 
-/* Добавляем анимированный фон */
+/* Декоративный слой поверх градиента body */
 body::before {
   content: '';
   position: fixed;
@@ -512,13 +512,7 @@ body::before {
     radial-gradient(circle at 20% 80%, var(--body-overlay-1) 0%, transparent 50%),
     radial-gradient(circle at 80% 20%, var(--body-overlay-1) 0%, transparent 50%),
     radial-gradient(circle at 40% 40%, var(--body-overlay-2) 0%, transparent 50%);
-  animation: bgFloat 15s ease-in-out infinite;
   z-index: -1;
-}
-
-@keyframes bgFloat {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-20px) rotate(1deg); }
 }
 
 /* Контейнер */
@@ -574,23 +568,6 @@ h1 {
   max-height: calc(100vh - 120px);
   min-height: 0; /* Позволяет flex элементам сжиматься */
   gap: 1rem; /* Добавляем равномерные отступы между элементами */
-}
-
-/* Добавляем блики на контейнер */
-.game-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, var(--surface-shine), transparent);
-  animation: shine 3s ease-in-out infinite;
-}
-
-@keyframes shine {
-  0% { left: -100%; }
-  100% { left: 100%; }
 }
 
 /* Контролы комнаты */
@@ -2234,7 +2211,7 @@ html[data-theme='cosmos'] body::before {
     radial-gradient(circle at 50% 100%, rgba(75, 156, 211, 0.2), transparent 55%),
     radial-gradient(circle at 80% 10%, rgba(155, 89, 182, 0.15), transparent 40%);
   background-size: 100% 100%;
-  animation: cosmosTwinkle 4s ease-in-out infinite, bgFloat 18s ease-in-out infinite;
+  animation: cosmosTwinkle 4s ease-in-out infinite;
 }
 
 html[data-theme='grunge'] .choice-btn {
@@ -2415,6 +2392,40 @@ html[data-theme='candy'] .choice-btn:hover:not(:disabled) {
 .theme-modal__dismiss:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 18px var(--shadow-accent-strong);
+}
+
+/* Стили для контента инструкции */
+.rules-content {
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.rules-section {
+  margin-bottom: 20px;
+}
+
+.rules-section h3 {
+  color: var(--accent-secondary);
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rules-section p {
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+
+.rules-section ul {
+  padding-left: 20px;
+  margin-bottom: 8px;
+}
+
+.rules-section li {
+  margin-bottom: 4px;
+  font-size: 0.95rem;
 }
 
 @media (max-width: 480px) {

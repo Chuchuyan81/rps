@@ -92,8 +92,10 @@
       <div class="menu-section">
         <h4>❓ Как играть</h4>
         <div class="menu-info">
-          <p>💡 <strong>Как играть:</strong> Создайте комнату (получите ID из 4 цифр) или введите ID существующей комнаты друга!</p>
-          <p>🌟 <strong>Совет:</strong> Каждый ход - это новая возможность показать свою стратегию!</p>
+          <p><strong>С другом:</strong> Оставьте поле пустым и нажмите «Создать комнату». Передайте другу выпавшие 4 цифры.</p>
+          <p>Чтобы войти к другу, введите его 4 цифры и нажмите «Присоединиться».</p>
+          <p><strong>С ботом:</strong> Меню ☰ → «Играть с ботом».</p>
+          <p><a href="#" onclick="openRulesModal(); return false;" style="color: var(--accent-primary); font-weight: 700; text-decoration: underline;">📖 Подробнее...</a></p>
         </div>
       </div>
       
@@ -171,6 +173,48 @@
       </div>
       <div class="theme-modal__footer">
         <button type="button" class="theme-modal__dismiss" onclick="closeThemeModal()">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно полной инструкции -->
+  <div class="theme-modal" id="rules-modal" role="dialog" aria-modal="true" aria-labelledby="rules-modal-title" aria-hidden="true">
+    <div class="theme-modal__backdrop" onclick="closeRulesModal()" aria-hidden="true"></div>
+    <div class="theme-modal__panel">
+      <div class="theme-modal__header">
+        <h2 id="rules-modal-title">📖 Полная инструкция</h2>
+        <button type="button" class="theme-modal__close" onclick="closeRulesModal()" aria-label="Закрыть">✕</button>
+      </div>
+      <div class="theme-modal__body rules-content">
+        <section class="rules-section">
+          <h3>⚔️ Правила игры</h3>
+          <ul>
+            <li><strong>Камень</strong> побеждает Ножницы.</li>
+            <li><strong>Ножницы</strong> режут Бумагу.</li>
+            <li><strong>Бумага</strong> накрывает Камень.</li>
+            <li>Если игроки выбрали одинаково — это <strong>ничья</strong>.</li>
+          </ul>
+        </section>
+
+        <section class="rules-section">
+          <h3>👥 Игра с другом</h3>
+          <p><strong>Если вы создаёте игру:</strong> Нажмите «Создать комнату» при пустом поле ввода. Внизу экрана появится сообщение с 4 цифрами. Сообщите их другу.</p>
+          <p><strong>Если вы заходите к другу:</strong> Введите его 4 цифры в поле и нажмите кнопку (она изменится на «Присоединиться»).</p>
+        </section>
+
+        <section class="rules-section">
+          <h3>🤖 Игра с ботом</h3>
+          <p>В меню (три полоски) выберите «Играть с ботом». Противник-робот подключится автоматически.</p>
+        </section>
+
+        <section class="rules-section">
+          <h3>⏳ Процесс</h3>
+          <p>Когда оба игрока сделали ход, появится результат. Новый раунд начнётся автоматически через 4 секунды.</p>
+          <p>Для выхода в меню нажмите <strong>крестик (✕)</strong> вверху игрового поля.</p>
+        </section>
+      </div>
+      <div class="theme-modal__footer">
+        <button type="button" class="theme-modal__dismiss" onclick="closeRulesModal()">Понятно!</button>
       </div>
     </div>
   </div>
@@ -500,6 +544,23 @@
 
     function closeThemeModal() {
       var modal = document.getElementById('theme-modal');
+      if (!modal) return;
+      modal.classList.remove('active');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+
+    function openRulesModal() {
+      closeMenu();
+      var modal = document.getElementById('rules-modal');
+      if (!modal) return;
+      modal.classList.add('active');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeRulesModal() {
+      var modal = document.getElementById('rules-modal');
       if (!modal) return;
       modal.classList.remove('active');
       modal.setAttribute('aria-hidden', 'true');
