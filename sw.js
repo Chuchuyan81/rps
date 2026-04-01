@@ -18,8 +18,6 @@ const STATIC_URLS = [
   BASE_PATH + 'script.js',
   BASE_PATH + 'style.css',
   BASE_PATH + 'manifest.json',
-  BASE_PATH + 'debug.html',
-  BASE_PATH + 'test-room-logic.html',
   BASE_PATH + 'icons/icon-192x192.png',
   BASE_PATH + 'icons/icon-512x512.png'
 ];
