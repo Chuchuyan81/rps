@@ -4,10 +4,10 @@
  * Поддерживает расширенные возможности кэширования, Background Sync, Push уведомления
  */
 
-const CACHE_NAME = 'rps-game-v2.0.2';
-const STATIC_CACHE = 'rps-static-v2.0.2';
-const DYNAMIC_CACHE = 'rps-dynamic-v2.0.2';
-const IMAGE_CACHE = 'rps-images-v2.0.2';
+const CACHE_NAME = 'rps-game-v2.0.3';
+const STATIC_CACHE = 'rps-static-v2.0.3';
+const DYNAMIC_CACHE = 'rps-dynamic-v2.0.3';
+const IMAGE_CACHE = 'rps-images-v2.0.3';
 
 /** Каталог приложения: корень сайта или подпуть (например /rps/ на GitHub Pages) */
 const BASE_PATH = new URL('./', self.location.href).pathname;
@@ -38,7 +38,7 @@ const CACHE_STRATEGIES = {
 
 // Установка Service Worker
 self.addEventListener('install', (event) => {
-  console.log('🔧 Service Worker v2.0.2: Установка');
+  console.log('🔧 Service Worker v2.0.3: Установка');
   
   event.waitUntil(
     Promise.all([
@@ -76,7 +76,7 @@ self.addEventListener('install', (event) => {
 
 // Активация Service Worker
 self.addEventListener('activate', (event) => {
-  console.log('🚀 Service Worker v2.0.2: Активация');
+  console.log('🚀 Service Worker v2.0.3: Активация');
   
   event.waitUntil(
     Promise.all([
@@ -98,7 +98,7 @@ self.addEventListener('activate', (event) => {
       self.clients.claim()
     ])
     .then(() => {
-      console.log('✅ Service Worker v2.0.2 активирован');
+      console.log('✅ Service Worker v2.0.3 активирован');
     })
   );
 });
@@ -219,38 +219,56 @@ async function networkFirst(request) {
 }
 
 /**
- * Стратегия Stale While Revalidate
+ * Оптимизированная стратегия Stale While Revalidate
+ * Сначала возвращает кэш (если есть), затем обновляет его в фоне.
+ * Исправлена проблема с двойными запросами и обработкой ошибок сети.
  */
 async function staleWhileRevalidate(request) {
   const cachedResponse = await caches.match(request);
   
-  // Асинхронно обновляем кэш
-  const updateCache = async () => {
-    try {
-      const networkResponse = await fetch(request);
-      
-      if (networkResponse.ok) {
-        const cache = await caches.open(
-          request.destination === 'image' ? IMAGE_CACHE : DYNAMIC_CACHE
-        );
-        cache.put(request, networkResponse.clone());
-      }
-    } catch (error) {
-      console.log('🔄 Фоновое обновление не удалось:', error);
-    }
-  };
-  
-  // Запускаем обновление в фоне
-  updateCache();
-  
-  // Возвращаем кэшированный ответ если есть
+  // Если есть в кэше — отдаем его сразу и пытаемся обновить в фоне
   if (cachedResponse) {
-    console.log('📦 Stale-while-revalidate:', request.url);
+    // Асинхронно обновляем кэш
+    const updateCacheTask = async () => {
+      try {
+        const networkResponse = await fetch(request);
+        if (networkResponse && networkResponse.ok) {
+          const cache = await caches.open(
+            request.destination === 'image' ? IMAGE_CACHE : DYNAMIC_CACHE
+          );
+          await cache.put(request, networkResponse.clone());
+        }
+      } catch (error) {
+        // Ошибка в фоне не критична, если мы уже отдали кэш
+        if (navigator.onLine) {
+          console.log('🔄 Фоновое обновление не удалось (кэш сохранен):', request.url);
+        }
+      }
+    };
+    
+    // Запускаем обновление, но не ждем его завершения перед возвратом ответа
+    updateCacheTask();
+    
+    console.log('📦 Возврат из кэша (SWR):', request.url);
     return cachedResponse;
   }
   
-  // Если нет кэша, ждем сетевой ответ
-  return await fetch(request);
+  // Если в кэше нет — делаем единственный сетевой запрос
+  try {
+    const networkResponse = await fetch(request);
+    
+    if (networkResponse && networkResponse.ok) {
+      const cache = await caches.open(
+        request.destination === 'image' ? IMAGE_CACHE : DYNAMIC_CACHE
+      );
+      await cache.put(request, networkResponse.clone());
+    }
+    
+    return networkResponse;
+  } catch (error) {
+    console.error('❌ Сетевой запрос не удался:', request.url, error);
+    return await handleOffline(request);
+  }
 }
 
 /**

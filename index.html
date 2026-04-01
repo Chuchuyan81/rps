@@ -274,7 +274,7 @@
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script> 
   <script src="script.js"></script>
   
-  <!-- PWA Service Worker v2.0.2 -->
+  <!-- PWA Service Worker v2.0.3 -->
   <script>
     // Регистрация Service Worker для PWA функциональности
     if ('serviceWorker' in navigator) {
@@ -293,7 +293,7 @@
             appBasePath + 'sw.js',
             { scope: appBasePath }
           );
-          console.log('✅ Service Worker v2.0.2 зарегистрирован:', registration.scope);
+          console.log('✅ Service Worker v2.0.3 зарегистрирован:', registration.scope);
           
           // Обработка обновлений SW
           registration.addEventListener('updatefound', () => {

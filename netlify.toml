@@ -2,18 +2,25 @@
   publish = "."             # Указываем корень, так как папки dist нет
   command = ""              # Команда сборки не нужна
 
-# 🔁 Fallback для SPA (если будете использовать красивые URL для комнат)
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-
 # 📄 Настройка заголовков для манифеста (у вас файл называется manifest.json)
 [[headers]]
   for = "/manifest.json"
   [headers.values]
     Content-Type = "application/manifest+json"
     Cache-Control = "public, max-age=0, must-revalidate"
+
+# 🖼️ Явный 404 для отсутствующих иконок (чтобы не возвращать index.html)
+[[redirects]]
+  from = "/icons/*"
+  to = "/icons/:splat"
+  status = 404
+  force = true
+
+# 🔁 Fallback для SPA (если будете использовать красивые URL для комнат)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
 
 # 🎨 Исправление доставки стилей и скриптов
 [[headers]]
