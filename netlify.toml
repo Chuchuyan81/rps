@@ -1,0 +1,35 @@
+[build]
+  publish = "."             # Указываем корень, так как папки dist нет
+  command = ""              # Команда сборки не нужна
+
+# 🔁 Fallback для SPA (если будете использовать красивые URL для комнат)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# 📄 Настройка заголовков для манифеста (у вас файл называется manifest.json)
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Content-Type = "application/manifest+json"
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# 🎨 Исправление доставки стилей и скриптов
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Content-Type = "text/css"
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Content-Type = "application/javascript"
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# 🖼️ Кэширование иконок
+[[headers]]
+  for = "/icons/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
