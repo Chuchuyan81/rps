@@ -45,13 +45,22 @@ self.addEventListener('install', (event) => {
       // Предварительное кэширование статических ресурсов
       caches.open(STATIC_CACHE).then(cache => {
         console.log('📦 Кэширование статических ресурсов');
-        return cache.addAll(STATIC_URLS);
+        // Используем map для кэширования каждого файла по отдельности, чтобы один сбой не ломал всё
+        return Promise.allSettled(
+          STATIC_URLS.map(url => 
+            cache.add(url).catch(error => console.error(`❌ Не удалось закэшировать ${url}:`, error))
+          )
+        );
       }),
       
       // Предварительное кэширование динамических ресурсов
       caches.open(DYNAMIC_CACHE).then(cache => {
         console.log('🌐 Кэширование динамических ресурсов');
-        return cache.addAll(DYNAMIC_URLS);
+        return Promise.allSettled(
+          DYNAMIC_URLS.map(url => 
+            cache.add(url).catch(error => console.error(`❌ Не удалось закэшировать ${url}:`, error))
+          )
+        );
       })
     ])
     .then(() => {
@@ -119,9 +128,12 @@ self.addEventListener('fetch', (event) => {
  */
 function getStrategyForRequest(request) {
   const url = new URL(request.url);
+  const path = url.pathname;
   
   // Статические ресурсы - cache first
-  if (STATIC_URLS.includes(url.pathname)) {
+  // Проверяем как полное совпадение, так и окончание пути
+  if (STATIC_URLS.includes(path) || 
+      ['index.html', 'script.js', 'style.css', 'manifest.json'].some(f => path.endsWith('/' + f) || path === f)) {
     return CACHE_STRATEGIES.CACHE_FIRST;
   }
   
