@@ -341,6 +341,9 @@ function showGameUI() {
 
   if (choices) choices.style.display = "block";
   
+  // Добавляем компактный вид заголовка для мобильных
+  document.querySelector('h1')?.classList.add('compact-title');
+  
   // Скрываем поле комнаты во время игры
   if (roomControls) {
     roomControls.classList.add("hidden");
@@ -431,7 +434,7 @@ async function makeMove(choice) {
 // Определение победителя
 function determineWinner(player1Choice, player2Choice) {
   if (player1Choice === player2Choice) {
-    return { winner: 'draw', message: '🤝 Ничья! Отличная игра!' };
+    return { winner: 'draw', message: '🤝 Ничья!' };
   }
   
   const rules = { 
@@ -445,12 +448,12 @@ function determineWinner(player1Choice, player2Choice) {
   if (gameState.isPlayer1) {
     return {
       winner: player1Wins ? 'me' : 'opponent',
-      message: player1Wins ? '🏆 Потрясающе! Вы победили! Вы настоящий чемпион! 🥇' : '😊 Хорошая попытка! В следующий раз обязательно получится! 🌟'
+      message: player1Wins ? '🏆 Вы победили!' : '😊 Попробуйте ещё раз!'
     };
   } else {
     return {
       winner: player1Wins ? 'opponent' : 'me',
-      message: player1Wins ? '😊 Хорошая попытка! В следующий раз обязательно получится! 🌟' : '🏆 Потрясающе! Вы победили! Вы настоящий чемпион! 🥇'
+      message: player1Wins ? '😊 Попробуйте ещё раз!' : '🏆 Вы победили!'
     };
   }
 }
@@ -1236,6 +1239,9 @@ async function exitGame() {
       result.className = 'result';
     }
     
+    // Убираем компактный вид заголовка
+    document.querySelector('h1')?.classList.remove('compact-title');
+    
     // Показываем поле комнаты обратно
     if (roomControls) {
       roomControls.classList.remove('hidden');
@@ -1295,7 +1301,7 @@ function showGameResult(result, myChoice, opponentChoice, opponentName) {
   // Создаем HTML для отображения результата
   const resultHTML = `
     <div class="status-message">
-      <div style="font-size: 1.2rem; margin-bottom: 1rem;">
+      <div class="result-title">
         ${result.message}
       </div>
       <div class="choices-display">

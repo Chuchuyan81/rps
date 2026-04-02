@@ -888,7 +888,9 @@ h1 {
 
 .status-message {
   text-align: center;
-  line-height: 1.5;
+  line-height: 1.4;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .status-message.success-message {
@@ -988,8 +990,8 @@ h1 {
   }
   
   h1 {
-    font-size: 2rem;
-    margin-bottom: 1.5rem;
+    font-size: clamp(1.6rem, 6vw, 2rem);
+    margin-bottom: clamp(0.5rem, 4vw, 1.5rem);
   }
   
   .game-container {
@@ -1017,9 +1019,7 @@ h1 {
 }
 
 @media (max-width: 480px) {
-  h1 {
-    font-size: 1.8rem;
-  }
+  /* h1 adaptive styles */
   
   .game-container {
     padding: 1rem;
@@ -1671,18 +1671,7 @@ h1 {
   display: none;
 }
 
-/* Упрощение заголовка */
-h1 {
-  font-size: 2.2rem;
-  margin-bottom: 1.5rem;
-}
-
-@media (max-width: 480px) {
-  h1 {
-    font-size: 1.8rem;
-    margin-bottom: 1rem;
-  }
-}
+/* h1 simplify removed as it is handled in media queries */
 
 /* Оптимизация контейнера для минималистичного дизайна */
 .game-container {
@@ -1775,10 +1764,7 @@ h1 {
     max-height: calc(100vh - 50px);
   }
   
-  h1 {
-    font-size: 1.3rem;
-    margin-bottom: 0.2rem;
-  }
+  /* h1 adaptive styles */
   
   .game-header h3 {
     font-size: 0.9rem;
@@ -1965,8 +1951,9 @@ h1 {
   .game-container {
     padding: 1rem;
     border-radius: 15px;
-    max-height: calc(100vh - 80px);
-    gap: 0.8rem; /* Уменьшаем отступы на мобильных */
+    max-height: 90vh; /* Увеличиваем высоту на мобильных */
+    overflow-y: auto; /* Добавляем прокрутку при необходимости */
+    gap: 0.8rem;
   }
   
   h1 {
@@ -2035,15 +2022,10 @@ h1 {
   }
 }
 
-.status-message > div:first-child {
-  font-size: 1rem !important;
-  line-height: 1.3; /* Улучшаем читаемость */
-}
-
 /* Специальные стили для результатов с выбором игроков */
 .status-message .choices-display {
-  margin-top: 0.8rem;
-  padding: 0.6rem;
+  margin-top: 0.5rem; /* Уменьшено */
+  padding: 0.5rem; /* Уменьшено */
   background: var(--choices-display-bg);
   border-radius: 8px;
   border: 1px solid var(--choices-display-border);
@@ -2071,10 +2053,11 @@ h1 {
 }
 
 /* Улучшенные стили для отображения текста в результатах */
-.status-message {
-  line-height: 1.4; /* Улучшаем читаемость */
-  word-wrap: break-word; /* Переносим длинные слова */
-  overflow-wrap: break-word; /* Дополнительная поддержка переноса */
+.result-title {
+  font-size: clamp(0.9rem, 4.5vw, 1.25rem);
+  font-weight: 700;
+  margin-bottom: clamp(0.4rem, 2vw, 1rem);
+  line-height: 1.2;
 }
 
 /* Специальные стили для результатов с анимацией */
@@ -2109,23 +2092,64 @@ h1 {
   .container {
     padding: 5px;
   }
+
+  h1.compact-title {
+    width: 60px;
+    height: 60px;
+    font-size: 1.6rem;
+    margin: 5px auto 10px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-bg);
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border: 1px solid var(--surface-border);
+    flex-shrink: 0;
+    animation: none; /* Убираем анимацию свечения на мобильных для экономии места */
+    text-shadow: none;
+  }
+
+  h1.compact-title .title-text {
+    display: none;
+  }
   
   .game-container {
     padding: 0.8rem;
-    max-height: calc(100vh - 60px);
-    gap: 0.6rem;
+    max-height: 90vh; /* Увеличиваем высоту */
+    overflow-y: auto; /* Скролл если не влезает */
+    gap: 0.5rem; /* Уменьшаем отступы */
   }
-  
-  h1 {
-    font-size: 1.5rem;
-    margin-bottom: 0.3rem;
+
+  .choices h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
   }
-  
+
+  .choice-buttons {
+    gap: 0.8rem;
+  }
+
+  .choice-btn {
+    min-width: 0;
+    flex: 1 1 30%;
+    min-height: 5.5rem;
+    padding: 10px 8px;
+    font-size: 14px;
+    border-radius: 12px;
+  }
+
+  .choice-btn-icon {
+    width: 2rem;
+    height: 2rem;
+  }
+
   .result {
-    font-size: 0.9rem;
-    padding: 0.5rem;
+    font-size: 0.85rem;
+    padding: 0.4rem;
     margin: 0;
-    min-height: 40px;
+    min-height: auto; /* Позволяем адаптироваться */
   }
   
   .game-header h3 {
