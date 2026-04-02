@@ -2,12 +2,16 @@
   publish = "."             # Указываем корень, так как папки dist нет
   command = ""              # Команда сборки не нужна
 
-# 📄 Настройка заголовков для манифеста (у вас файл называется manifest.json)
-[[headers]]
-  for = "/manifest.json"
-  [headers.values]
-    Content-Type = "application/manifest+json"
-    Cache-Control = "public, max-age=0, must-revalidate"
+# 📄 Явные правила для критических файлов PWA (добавлять ПЕРЕД redirects)
+[[redirects]]
+  from = "/sw.js"
+  to = "/sw.js"
+  status = 200
+
+[[redirects]]
+  from = "/manifest.json"
+  to = "/manifest.json"
+  status = 200
 
 # 🖼️ Явный 404 для отсутствующих иконок (чтобы не возвращать index.html)
 [[redirects]]
@@ -21,6 +25,21 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+# 📄 Настройка заголовков для манифеста (у вас файл называется manifest.json)
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Content-Type = "application/manifest+json"
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# 🛠️ Настройка заголовков для Service Worker
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Content-Type = "application/javascript"
+    Cache-Control = "public, max-age=0, must-revalidate"
+    Service-Worker-Allowed = "/"
 
 # 🎨 Исправление доставки стилей и скриптов
 [[headers]]

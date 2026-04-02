@@ -280,20 +280,10 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const appBasePath = (() => {
-            let p = window.location.pathname;
-            if (/\/index\.html?$/i.test(p)) {
-              p = p.replace(/\/index\.html?$/i, '/');
-            } else if (!p.endsWith('/')) {
-              p += '/';
-            }
-            return p;
-          })();
-          const registration = await navigator.serviceWorker.register(
-            appBasePath + 'sw.js',
-            { scope: appBasePath }
-          );
-          console.log('✅ Service Worker v2.0.3 зарегистрирован:', registration.scope);
+          // Для Netlify используем прямой корень для надежности
+          const swPath = '/sw.js';
+          const registration = await navigator.serviceWorker.register(swPath, { scope: '/' });
+          console.log('✅ Service Worker v2.0.2 зарегистрирован:', registration.scope);
           
           // Обработка обновлений SW
           registration.addEventListener('updatefound', () => {
