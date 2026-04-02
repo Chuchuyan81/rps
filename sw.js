@@ -10,7 +10,7 @@ const DYNAMIC_CACHE = 'rps-dynamic-v2.0.2';
 const IMAGE_CACHE = 'rps-images-v2.0.2';
 
 /** Каталог приложения: корень сайта или подпуть (например /rps/ на GitHub Pages) */
-const BASE_PATH = new URL('./', self.location.href).pathname;
+const BASE_PATH = '/'; // На Netlify всегда корень
 
 const STATIC_URLS = [
   BASE_PATH,
@@ -19,7 +19,10 @@ const STATIC_URLS = [
   BASE_PATH + 'style.css',
   BASE_PATH + 'manifest.json',
   BASE_PATH + 'icons/icon-192x192.png',
-  BASE_PATH + 'icons/icon-512x512.png'
+  BASE_PATH + 'icons/icon-512x512.png',
+  // Добавим основные иконки, чтобы не было 404
+  BASE_PATH + 'icons/icon-32x32.png',
+  BASE_PATH + 'icons/icon-180x180.png'
 ];
 
 const DYNAMIC_URLS = [
@@ -41,36 +44,41 @@ self.addEventListener('install', (event) => {
   console.log('🔧 Service Worker v2.0.2: Установка');
   
   event.waitUntil(
-    Promise.all([
-      // Предварительное кэширование статических ресурсов
-      caches.open(STATIC_CACHE).then(cache => {
-        console.log('📦 Кэширование статических ресурсов');
-        // Используем map для кэширования каждого файла по отдельности, чтобы один сбой не ломал всё
-        return Promise.allSettled(
-          STATIC_URLS.map(url => 
-            cache.add(url).catch(error => console.error(`❌ Не удалось закэшировать ${url}:`, error))
-          )
-        );
-      }),
-      
-      // Предварительное кэширование динамических ресурсов
-      caches.open(DYNAMIC_CACHE).then(cache => {
+    (async () => {
+      try {
+        // Предварительное кэширование статических ресурсов с паузой между запросами
+        // чтобы избежать срабатывания WAF (особенно на Netlify)
+        const staticCache = await caches.open(STATIC_CACHE);
+        console.log('📦 Кэширование статических ресурсов (постепенно)');
+        
+        for (const url of STATIC_URLS) {
+          try {
+            await staticCache.add(url);
+            // Небольшая задержка между запросами
+            await new Promise(r => setTimeout(r, 50)); 
+          } catch (err) {
+            console.error(`❌ Не удалось закэшировать ${url}:`, err);
+          }
+        }
+
+        // Предварительное кэширование динамических ресурсов
+        const dynamicCache = await caches.open(DYNAMIC_CACHE);
         console.log('🌐 Кэширование динамических ресурсов');
-        return Promise.allSettled(
-          DYNAMIC_URLS.map(url => 
-            cache.add(url).catch(error => console.error(`❌ Не удалось закэшировать ${url}:`, error))
-          )
-        );
-      })
-    ])
-    .then(() => {
-      console.log('✅ Все ресурсы закэшированы');
-      // Принудительная активация нового SW
-      return self.skipWaiting();
-    })
-    .catch((error) => {
-      console.error('❌ Ошибка кэширования:', error);
-    })
+        for (const url of DYNAMIC_URLS) {
+          try {
+            await dynamicCache.add(url);
+            await new Promise(r => setTimeout(r, 50));
+          } catch (err) {
+            console.error(`❌ Не удалось закэшировать ${url}:`, err);
+          }
+        }
+
+        console.log('✅ Все ресурсы закэшированы');
+        return self.skipWaiting();
+      } catch (error) {
+        console.error('❌ Ошибка кэширования:', error);
+      }
+    })()
   );
 });
 
