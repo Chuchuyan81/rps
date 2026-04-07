@@ -5,6 +5,7 @@ const supabaseKey = "sb_publishable_cBZoHPWOyuMvv2byGoDxfw_h1bNou9G";
 // Константы для бот-комнаты
 const BOT_ROOM_ID = '9999';
 const BOT_PLAYER_ID = 'bot_player_9999';
+const ROUND_RESULT_DISPLAY_MS = 3000;
 
 // Глобальное состояние игры
 const gameState = {
@@ -15,7 +16,8 @@ const gameState = {
   myChoice: null,         // Мой выбор
   opponentChoice: null,   // Выбор оппонента
   gameStatus: 'idle',     // Статус: idle|waiting|playing|finished
-  playingWithBot: false   // Играем ли мы с ботом
+  playingWithBot: false,  // Играем ли мы с ботом
+  resetRoundTimerId: null // Таймер автосброса раунда
 };
 
 // Клиент БД (имя не «supabase»: коллизия с глобалом UMD @supabase/supabase-js)
@@ -463,6 +465,11 @@ async function resetRound() {
   if (!gameState.currentRoom || !supabaseClient) return;
 
   try {
+    if (gameState.resetRoundTimerId) {
+      clearTimeout(gameState.resetRoundTimerId);
+      gameState.resetRoundTimerId = null;
+    }
+
     const { error } = await retryWrapper(() =>
       supabaseClient
         .from("games")
@@ -596,10 +603,15 @@ function handleGameUpdate(gameData) {
       gameState.gameStatus = 'finished';
       toggleChoiceButtons(false);
       
-      // Автоматический сброс через 4 секунды
-      setTimeout(() => {
+      if (gameState.resetRoundTimerId) {
+        clearTimeout(gameState.resetRoundTimerId);
+      }
+
+      // Автоматический сброс результата через 3 секунды
+      gameState.resetRoundTimerId = setTimeout(() => {
+        gameState.resetRoundTimerId = null;
         resetRound();
-      }, 4000);
+      }, ROUND_RESULT_DISPLAY_MS);
     }
   }
 
@@ -1314,11 +1326,21 @@ function showGameResult(result, myChoice, opponentChoice, opponentName) {
           <div class="choice-label">${opponentName}: ${opponentChoice}</div>
         </div>
       </div>
+      <div class="result-timer" aria-hidden="true">
+        <div class="result-timer-bar"></div>
+      </div>
     </div>
   `;
   
   resultElement.innerHTML = resultHTML;
   resultElement.className = resultClass;
+
+  const timerBar = resultElement.querySelector('.result-timer-bar');
+  if (timerBar) {
+    timerBar.style.animation = 'none';
+    timerBar.offsetHeight; // Trigger reflow
+    timerBar.style.animation = `resultTimerShrink ${ROUND_RESULT_DISPLAY_MS}ms linear forwards`;
+  }
   
   // Добавляем анимацию появления
   resultElement.style.animation = 'none';
