@@ -389,6 +389,7 @@ async function makeMove(choice) {
 
   // Сохраняем выбор локально
   gameState.myChoice = choice;
+  playChoicePressFX(choice);
   toggleChoiceButtons(false);
   showStatus(`Ваш выбор: ${choice}. Ожидание хода оппонента...`);
 
@@ -431,6 +432,25 @@ async function makeMove(choice) {
     gameState.myChoice = null;
     toggleChoiceButtons(true);
   }
+}
+
+/**
+ * Локальная анимация нажатия кнопки выбора.
+ * Не зависит от сети и не влияет на логику игры.
+ */
+function playChoicePressFX(choice) {
+  const selectedButton = document.querySelector(`.choice-btn[onclick*="${choice}"]`);
+  if (!selectedButton) {
+    return;
+  }
+
+  selectedButton.classList.remove('choice-press');
+  selectedButton.offsetHeight; // Trigger reflow
+  selectedButton.classList.add('choice-press');
+
+  setTimeout(() => {
+    selectedButton.classList.remove('choice-press');
+  }, 220);
 }
 
 // Определение победителя
@@ -1346,4 +1366,117 @@ function showGameResult(result, myChoice, opponentChoice, opponentName) {
   resultElement.style.animation = 'none';
   resultElement.offsetHeight; // Trigger reflow
   resultElement.style.animation = 'resultPulse 0.5s ease-in-out';
+
+  runRoundStoryboard(resultElement, result.winner);
+}
+
+/**
+ * Создает набор частиц для пост-эффекта после удара.
+ */
+function spawnResultParticles(resultElement, count = 10) {
+  const particlesHost = document.createElement('div');
+  particlesHost.className = 'result-particles';
+  resultElement.appendChild(particlesHost);
+
+  for (let i = 0; i < count; i += 1) {
+    const particle = document.createElement('span');
+    particle.className = 'result-particle';
+
+    const angle = (Math.PI * 2 * i) / count + (Math.random() * 0.45 - 0.22);
+    const distance = 34 + Math.random() * 90;
+    const x = Math.cos(angle) * distance;
+    const y = Math.sin(angle) * distance;
+
+    particle.style.setProperty('--tx', `${x}px`);
+    particle.style.setProperty('--ty', `${y}px`);
+    particle.style.animationDelay = `${Math.floor(Math.random() * 120)}ms`;
+
+    particlesHost.appendChild(particle);
+  }
+
+  setTimeout(() => {
+    particlesHost.remove();
+  }, 1200);
+}
+
+/**
+ * Таймлайн раунда в стиле "карточного импакта" под текущий UI.
+ * Полный цикл синхронизирован с ROUND_RESULT_DISPLAY_MS (3000мс).
+ */
+function runRoundStoryboard(resultElement, winner) {
+  const choicesDisplay = resultElement.querySelector('.choices-display');
+  const resultTitle = resultElement.querySelector('.result-title');
+  const playerChoices = resultElement.querySelectorAll('.player-choice');
+  const gameContainer = document.querySelector('.game-container');
+
+  if (!choicesDisplay || playerChoices.length < 2) {
+    return;
+  }
+
+  const myChoiceCard = playerChoices[0];
+  const opponentChoiceCard = playerChoices[1];
+
+  // 0-90мс: setup
+  resultElement.classList.add('fx-active');
+
+  // 90-620мс: reveal
+  setTimeout(() => {
+    choicesDisplay.classList.add('fx-reveal');
+  }, 90);
+
+  // 620-860мс: impact + shake
+  setTimeout(() => {
+    choicesDisplay.classList.remove('fx-reveal');
+    choicesDisplay.classList.add('fx-impact');
+
+    if (gameContainer) {
+      gameContainer.classList.remove('fx-shake');
+      gameContainer.offsetHeight; // Trigger reflow
+      gameContainer.classList.add('fx-shake');
+    }
+
+    if (resultTitle) {
+      resultTitle.classList.remove('fx-pop');
+      resultTitle.offsetHeight; // Trigger reflow
+      resultTitle.classList.add('fx-pop');
+    }
+  }, 620);
+
+  // 860-1500мс: resolve (winner/loser акцент)
+  setTimeout(() => {
+    choicesDisplay.classList.remove('fx-impact');
+
+    myChoiceCard.classList.remove('fx-winner', 'fx-loser');
+    opponentChoiceCard.classList.remove('fx-winner', 'fx-loser');
+
+    if (winner === 'me') {
+      myChoiceCard.classList.add('fx-winner');
+      opponentChoiceCard.classList.add('fx-loser');
+    } else if (winner === 'opponent') {
+      opponentChoiceCard.classList.add('fx-winner');
+      myChoiceCard.classList.add('fx-loser');
+    } else {
+      myChoiceCard.classList.add('fx-winner');
+      opponentChoiceCard.classList.add('fx-winner');
+    }
+  }, 860);
+
+  // 1500-2400мс: aftermath particles
+  setTimeout(() => {
+    spawnResultParticles(resultElement, 12);
+  }, 1500);
+
+  // 2400-3000мс: outro cleanup
+  setTimeout(() => {
+    resultElement.classList.remove('fx-active');
+    choicesDisplay.classList.remove('fx-reveal', 'fx-impact');
+    myChoiceCard.classList.remove('fx-winner', 'fx-loser');
+    opponentChoiceCard.classList.remove('fx-winner', 'fx-loser');
+    if (resultTitle) {
+      resultTitle.classList.remove('fx-pop');
+    }
+    if (gameContainer) {
+      gameContainer.classList.remove('fx-shake');
+    }
+  }, Math.max(ROUND_RESULT_DISPLAY_MS - 120, 2500));
 }

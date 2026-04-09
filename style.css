@@ -2482,3 +2482,279 @@ html[data-theme='candy'] .choice-btn:hover:not(:disabled) {
     font-size: 0.75rem;
   }
 }
+
+/* === Round FX storyboard (Hearthstone-like) === */
+.choice-btn.choice-press {
+  animation: choicePress 180ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@keyframes choicePress {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  40% {
+    transform: translateY(1px) scale(0.94);
+  }
+  72% {
+    transform: translateY(-2px) scale(1.06);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+.result.fx-active {
+  position: relative;
+  overflow: hidden;
+}
+
+.result.fx-active::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.14), transparent 62%);
+  opacity: 0;
+  pointer-events: none;
+  animation: resultBreath 620ms ease-out forwards;
+}
+
+@keyframes resultBreath {
+  0% {
+    opacity: 0;
+  }
+  45% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0.45;
+  }
+}
+
+.choices-display.fx-reveal .player-choice {
+  transform-origin: center;
+}
+
+.choices-display.fx-reveal .player-choice:first-child {
+  animation: playerRevealLeft 360ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.choices-display.fx-reveal .player-choice:last-child {
+  animation: playerRevealRight 360ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes playerRevealLeft {
+  0% {
+    transform: translateX(0) scale(0.95) rotate(-2deg);
+    filter: blur(1.4px);
+  }
+  58% {
+    transform: translateX(14px) scale(1.08) rotate(1deg);
+    filter: blur(0);
+  }
+  100% {
+    transform: translateX(0) scale(1) rotate(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes playerRevealRight {
+  0% {
+    transform: translateX(0) scale(0.95) rotate(2deg);
+    filter: blur(1.4px);
+  }
+  58% {
+    transform: translateX(-14px) scale(1.08) rotate(-1deg);
+    filter: blur(0);
+  }
+  100% {
+    transform: translateX(0) scale(1) rotate(0);
+    filter: blur(0);
+  }
+}
+
+.choices-display.fx-impact {
+  position: relative;
+}
+
+.choices-display.fx-impact::before,
+.choices-display.fx-impact::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.choices-display.fx-impact::before {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0));
+  animation: impactFlash 180ms ease-out forwards;
+}
+
+.choices-display.fx-impact::after {
+  width: 44px;
+  height: 44px;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  animation: impactRing 240ms ease-out forwards;
+}
+
+@keyframes impactFlash {
+  0% {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) scale(0.35);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(2);
+  }
+}
+
+@keyframes impactRing {
+  0% {
+    opacity: 0.8;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(2.2);
+  }
+}
+
+.game-container.fx-shake {
+  animation: battleShake 120ms linear 1;
+}
+
+@keyframes battleShake {
+  0% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-4px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.result-title.fx-pop {
+  animation: resultTitlePop 180ms ease-out;
+}
+
+@keyframes resultTitlePop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.player-choice.fx-winner {
+  animation: winnerGlow 520ms ease-out;
+}
+
+.player-choice.fx-loser {
+  animation: loserFade 520ms ease-out;
+}
+
+@keyframes winnerGlow {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+  }
+  45% {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.45);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.3);
+  }
+}
+
+@keyframes loserFade {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0.72;
+    transform: scale(0.98);
+  }
+}
+
+.result-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.result-particle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  transform: translate(-50%, -50%);
+  animation: particleDrift 900ms linear forwards;
+}
+
+@keyframes particleDrift {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.6);
+  }
+  15% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--tx), var(--ty)) scale(0.1);
+  }
+}
+
+@media (max-width: 768px) {
+  .game-container.fx-shake {
+    animation-duration: 90ms;
+  }
+
+  @keyframes battleShake {
+    0% {
+      transform: translateX(0);
+    }
+    20% {
+      transform: translateX(-2px);
+    }
+    40% {
+      transform: translateX(3px);
+    }
+    60% {
+      transform: translateX(-2px);
+    }
+    80% {
+      transform: translateX(1px);
+    }
+    100% {
+      transform: translateX(0);
+    }
+  }
+}
